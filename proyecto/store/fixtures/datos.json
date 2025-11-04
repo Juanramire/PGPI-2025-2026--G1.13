@@ -1,0 +1,381 @@
+[
+    {
+      "model": "store.categoria",
+      "pk": 1,
+      "fields": {
+        "nombre": "Ropa Deportiva",
+        "descripcion": "Prendas cómodas para actividades físicas.",
+        "imagen": "https://example.com/imagenes/categorias/deportiva.jpg"
+      }
+    },
+    {
+      "model": "store.categoria",
+      "pk": 2,
+      "fields": {
+        "nombre": "Casual",
+        "descripcion": "Ropa para uso diario y estilo urbano.",
+        "imagen": "https://example.com/imagenes/categorias/casual.jpg"
+      }
+    },
+    {
+      "model": "store.categoria",
+      "pk": 3,
+      "fields": {
+        "nombre": "Calzado",
+        "descripcion": "Zapatillas y zapatos para toda ocasión.",
+        "imagen": "https://example.com/imagenes/categorias/calzado.jpg"
+      }
+    },
+    {
+      "model": "store.categoria",
+      "pk": 4,
+      "fields": {
+        "nombre": "Accesorios",
+        "descripcion": "Complementos que completan tu estilo.",
+        "imagen": "https://example.com/imagenes/categorias/accesorios.jpg"
+      }
+    },
+    {
+      "model": "store.marca",
+      "pk": 1,
+      "fields": {
+        "nombre": "Nike",
+        "imagen": "https://example.com/imagenes/marcas/nike.png"
+      }
+    },
+    {
+      "model": "store.marca",
+      "pk": 2,
+      "fields": {
+        "nombre": "Adidas",
+        "imagen": "https://example.com/imagenes/marcas/adidas.png"
+      }
+    },
+    {
+      "model": "store.marca",
+      "pk": 3,
+      "fields": {
+        "nombre": "Puma",
+        "imagen": "https://example.com/imagenes/marcas/puma.png"
+      }
+    },
+    {
+      "model": "store.marca",
+      "pk": 4,
+      "fields": {
+        "nombre": "Under Armour",
+        "imagen": "https://example.com/imagenes/marcas/underarmour.png"
+      }
+    },
+    {
+      "model": "store.marca",
+      "pk": 5,
+      "fields": {
+        "nombre": "Reebok",
+        "imagen": "https://example.com/imagenes/marcas/reebok.png"
+      }
+    },
+  
+  
+    {
+      "model": "store.producto",
+      "pk": 1,
+      "fields": {
+        "nombre": "Camiseta Deportiva Hombre",
+        "descripcion": "Camiseta transpirable ideal para entrenamientos.",
+        "precio": "29.99",
+        "precio_oferta": "24.99",
+        "marca": 1,
+        "genero": "Hombre",
+        "color": "Azul",
+        "material": "Poliéster",
+        "stock": 30,
+        "esta_disponible": true,
+        "es_destacado": true,
+        "categoria": 1,
+        "fecha_creacion": "2024-01-01T10:00:00Z",
+        "fecha_actualizacion": "2024-01-01T10:00:00Z"
+      }
+    },
+    {
+      "model": "store.producto",
+      "pk": 2,
+      "fields": {
+        "nombre": "Pantalón Casual Mujer",
+        "descripcion": "Pantalón cómodo y moderno para uso diario.",
+        "precio": "45.00",
+        "precio_oferta": null,
+        "marca": 3,
+        "genero": "Mujer",
+        "color": "Negro",
+        "material": "Algodón",
+        "stock": 15,
+        "esta_disponible": true,
+        "es_destacado": false,
+        "categoria": 2,
+        "fecha_creacion": "2024-01-02T11:00:00Z",
+        "fecha_actualizacion": "2024-01-02T11:00:00Z"
+      }
+    },
+    {
+      "model": "store.producto",
+      "pk": 3,
+      "fields": {
+        "nombre": "Zapatillas Running",
+        "descripcion": "Zapatillas ligeras con buena amortiguación.",
+        "precio": "89.90",
+        "precio_oferta": "79.90",
+        "marca": 2,
+        "genero": "Unisex",
+        "color": "Gris",
+        "material": "Malla sintética",
+        "stock": 25,
+        "esta_disponible": true,
+        "es_destacado": true,
+        "categoria": 3,
+        "fecha_creacion": "2024-01-03T12:00:00Z",
+        "fecha_actualizacion": "2024-01-03T12:00:00Z"
+      }
+    },
+    {
+      "model": "store.producto",
+      "pk": 4,
+      "fields": {
+        "nombre": "Sudadera con Capucha",
+        "descripcion": "Sudadera cálida con logo estampado.",
+        "precio": "59.90",
+        "precio_oferta": "49.90",
+        "marca": 4,
+        "genero": "Hombre",
+        "color": "Gris",
+        "material": "Algodón",
+        "stock": 20,
+        "esta_disponible": true,
+        "es_destacado": false,
+        "categoria": 2,
+        "fecha_creacion": "2024-01-04T10:00:00Z",
+        "fecha_actualizacion": "2024-01-04T10:00:00Z"
+      }
+    },
+    {
+      "model": "store.producto",
+      "pk": 5,
+      "fields": {
+        "nombre": "Mallas Deportivas Mujer",
+        "descripcion": "Mallas elásticas con cintura alta.",
+        "precio": "35.50",
+        "precio_oferta": null,
+        "marca": 1,
+        "genero": "Mujer",
+        "color": "Rosa",
+        "material": "Elastano",
+        "stock": 18,
+        "esta_disponible": true,
+        "es_destacado": false,
+        "categoria": 1,
+        "fecha_creacion": "2024-01-05T09:30:00Z",
+        "fecha_actualizacion": "2024-01-05T09:30:00Z"
+      }
+    },
+    {
+      "model": "store.producto",
+      "pk": 6,
+      "fields": {
+        "nombre": "Camiseta Casual Blanca",
+        "descripcion": "Camiseta básica de algodón orgánico.",
+        "precio": "19.99",
+        "precio_oferta": null,
+        "marca": 5,
+        "genero": "Unisex",
+        "color": "Blanco",
+        "material": "Algodón",
+        "stock": 40,
+        "esta_disponible": true,
+        "es_destacado": false,
+        "categoria": 2,
+        "fecha_creacion": "2024-01-06T10:10:00Z",
+        "fecha_actualizacion": "2024-01-06T10:10:00Z"
+      }
+    },
+    {
+      "model": "store.producto",
+      "pk": 7,
+      "fields": {
+        "nombre": "Chaqueta Impermeable",
+        "descripcion": "Chaqueta resistente al agua para exteriores.",
+        "precio": "79.90",
+        "precio_oferta": "69.90",
+        "marca": 4,
+        "genero": "Hombre",
+        "color": "Verde Oliva",
+        "material": "Nylon",
+        "stock": 12,
+        "esta_disponible": true,
+        "es_destacado": true,
+        "categoria": 1,
+        "fecha_creacion": "2024-01-07T13:00:00Z",
+        "fecha_actualizacion": "2024-01-07T13:00:00Z"
+      }
+    },
+    {
+      "model": "store.producto",
+      "pk": 8,
+      "fields": {
+        "nombre": "Polo Casual Hombre",
+        "descripcion": "Polo de algodón con cuello clásico.",
+        "precio": "39.90",
+        "precio_oferta": null,
+        "marca": 3,
+        "genero": "Hombre",
+        "color": "Blanco",
+        "material": "Algodón",
+        "stock": 22,
+        "esta_disponible": true,
+        "es_destacado": false,
+        "categoria": 2,
+        "fecha_creacion": "2024-01-08T10:00:00Z",
+        "fecha_actualizacion": "2024-01-08T10:00:00Z"
+      }
+    },
+    {
+      "model": "store.producto",
+      "pk": 9,
+      "fields": {
+        "nombre": "Zapatillas Urbanas",
+        "descripcion": "Zapatillas casuales para uso diario.",
+        "precio": "69.90",
+        "precio_oferta": "59.90",
+        "marca": 2,
+        "genero": "Unisex",
+        "color": "Negro",
+        "material": "Cuero sintético",
+        "stock": 28,
+        "esta_disponible": true,
+        "es_destacado": true,
+        "categoria": 3,
+        "fecha_creacion": "2024-01-09T11:30:00Z",
+        "fecha_actualizacion": "2024-01-09T11:30:00Z"
+      }
+    },
+    {
+      "model": "store.producto",
+      "pk": 10,
+      "fields": {
+        "nombre": "Gorra Deportiva",
+        "descripcion": "Gorra ajustable con visera curva.",
+        "precio": "14.99",
+        "precio_oferta": null,
+        "marca": 5,
+        "genero": "Unisex",
+        "color": "Negro",
+        "material": "Algodón",
+        "stock": 50,
+        "esta_disponible": true,
+        "es_destacado": false,
+        "categoria": 4,
+        "fecha_creacion": "2024-01-10T09:00:00Z",
+        "fecha_actualizacion": "2024-01-10T09:00:00Z"
+      }
+    },
+    {
+      "model": "store.producto",
+      "pk": 11,
+      "fields": {
+        "nombre": "Mochila Deportiva",
+        "descripcion": "Mochila amplia con compartimentos laterales.",
+        "precio": "49.99",
+        "precio_oferta": "39.99",
+        "marca": 1,
+        "genero": "Unisex",
+        "color": "Rojo",
+        "material": "Poliéster",
+        "stock": 35,
+        "esta_disponible": true,
+        "es_destacado": true,
+        "categoria": 4,
+        "fecha_creacion": "2024-01-11T08:00:00Z",
+        "fecha_actualizacion": "2024-01-11T08:00:00Z"
+      }
+    },
+    {
+      "model": "store.producto",
+      "pk": 12,
+      "fields": {
+        "nombre": "Calcetines Técnicos",
+        "descripcion": "Calcetines transpirables para deporte.",
+        "precio": "9.99",
+        "precio_oferta": null,
+        "marca": 3,
+        "genero": "Unisex",
+        "color": "Blanco",
+        "material": "Algodón y poliéster",
+        "stock": 60,
+        "esta_disponible": true,
+        "es_destacado": false,
+        "categoria": 4,
+        "fecha_creacion": "2024-01-12T07:45:00Z",
+        "fecha_actualizacion": "2024-01-12T07:45:00Z"
+      }
+    },
+    {
+      "model": "store.producto",
+      "pk": 13,
+      "fields": {
+        "nombre": "Shorts Running",
+        "descripcion": "Shorts ligeros con bolsillos laterales.",
+        "precio": "24.99",
+        "precio_oferta": null,
+        "marca": 4,
+        "genero": "Hombre",
+        "color": "Azul Marino",
+        "material": "Poliéster",
+        "stock": 20,
+        "esta_disponible": true,
+        "es_destacado": false,
+        "categoria": 1,
+        "fecha_creacion": "2024-01-13T09:10:00Z",
+        "fecha_actualizacion": "2024-01-13T09:10:00Z"
+      }
+    },
+    {
+      "model": "store.producto",
+      "pk": 14,
+      "fields": {
+        "nombre": "Sudadera Casual Mujer",
+        "descripcion": "Sudadera oversize con capucha.",
+        "precio": "54.99",
+        "precio_oferta": "44.99",
+        "marca": 5,
+        "genero": "Mujer",
+        "color": "Beige",
+        "material": "Algodón",
+        "stock": 16,
+        "esta_disponible": true,
+        "es_destacado": false,
+        "categoria": 2,
+        "fecha_creacion": "2024-01-14T08:30:00Z",
+        "fecha_actualizacion": "2024-01-14T08:30:00Z"
+      }
+    },
+    {
+      "model": "store.producto",
+      "pk": 15,
+      "fields": {
+        "nombre": "Botines Urbanos",
+        "descripcion": "Botines de diseño moderno con suela antideslizante.",
+        "precio": "99.99",
+        "precio_oferta": "84.99",
+        "marca": 2,
+        "genero": "Unisex",
+        "color": "Marrón",
+        "material": "Cuero",
+        "stock": 10,
+        "esta_disponible": true,
+        "es_destacado": true,
+        "categoria": 3,
+        "fecha_creacion": "2024-01-15T10:00:00Z",
+        "fecha_actualizacion": "2024-01-15T10:00:00Z"
+      }
+    }
+  ]
+  

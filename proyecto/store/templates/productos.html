@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% block title %}Productos - MiTienda{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1 class="mb-4 text-center">Catálogo de Productos</h1>
+
+    <!-- ==================== GRID DE PRODUCTOS ==================== -->
+    <div class="row g-4">
+        {% for producto in productos %}
+            <div class="col-12 col-sm-6 col-md-4">
+                <div class="card h-100 shadow-sm">
+                    <img src="{{ product.image.url }}" class="card-img-top" alt="{{ product.name }}">
+                    <div class="card-body d-flex flex-column">
+                        <h5 class="card-title">{{ product.name }}</h5>
+                        <p class="card-text text-muted mb-1">Categoría: {{ product.category.name }}</p>
+                        <p class="card-text fw-bold mb-3">Precio: {{ product.price }} €</p>
+                        <button class="btn btn-warning mt-auto" onclick="añadirCarrito({nombre:'{{producto.nombre|escapejs}}',id:'{{producto.id}}',precio:{{producto.precio}}})">Añadir al carrito 🛒</button>
+                    </div>
+                </div>
+            </div>
+        {% empty %}
+            <div class="col-12 text-center text-muted">
+                <p>No hay productos disponibles en este momento.</p>
+            </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

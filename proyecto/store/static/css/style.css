@@ -1,0 +1,59 @@
+/* ==================== ESTILOS GENERALES ==================== */
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #f8f9fa;
+}
+
+/* ==================== NAVBAR ==================== */
+.navbar-brand img {
+    margin-right: 8px;
+    border-radius: 4px;
+}
+
+.navbar .btn-warning {
+    font-weight: 500;
+    transition: transform 0.2s ease;
+}
+
+.navbar .btn-warning:hover {
+    transform: scale(1.05);
+}
+
+/* ==================== FOOTER ==================== */
+footer {
+    font-size: 0.9rem;
+    letter-spacing: 0.3px;
+}
+
+/* ==================== CARRITO ==================== */
+.btn-warning {
+    color: #212529;
+}
+
+.btn-warning:hover {
+    color: #000;
+    background-color: #ffc107d9;
+}
+#carrito-contenido {
+    right: 0;                /* Lo alinea al borde derecho del botón */
+    left: auto;              /* Evita que se expanda hacia la izquierda */
+    position: absolute;      /* Mantiene posición controlada */
+    transform: translateX(-10px); /* Pequeño ajuste para no pegarse al borde */
+    max-height: 400px;       /* Evita que se salga por abajo */
+    overflow-y: auto;        /* Hace scroll si hay muchos productos */
+    z-index: 1050;           /* Asegura que quede por encima del navbar */
+    border-radius: 10px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  }
+
+/* ==================== RESPONSIVE ==================== */
+@media (max-width: 768px) {
+    .navbar-brand {
+        font-size: 1.1rem;
+    }
+
+    .navbar .btn-warning {
+        font-size: 0.9rem;
+        padding: 5px 10px;
+    }
+}
