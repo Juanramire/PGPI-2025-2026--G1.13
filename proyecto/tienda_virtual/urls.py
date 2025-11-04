@@ -20,4 +20,6 @@ from store import views
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', views.productos),
+    path('login/', views.login_view, name='login'),
+    path('logout/', views.logout_view, name='logout'),
 ]
