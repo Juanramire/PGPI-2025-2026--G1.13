@@ -4,6 +4,9 @@ class TallaProducto(models.Model):
     talla = models.CharField(max_length=30)
     stock = models.PositiveIntegerField()
     producto = models.ForeignKey('Producto', on_delete=models.CASCADE, related_name='tallas')
+    def __str__(self):
+        return self.talla
+
 class Producto(models.Model):
     nombre = models.CharField(max_length=100)
     descripcion = models.TextField()
@@ -21,15 +24,17 @@ class Producto(models.Model):
     categoria=models.ForeignKey('Categoria', on_delete=models.CASCADE, related_name='productos')
     def __str__(self):
         return self.nombre
+
 class Categoria(models.Model):
     nombre = models.CharField(max_length=100)
     descripcion = models.TextField()
     imagen = models.TextField()
     def __str__(self):
         return self.nombre
+
 class Marca(models.Model):
     nombre = models.CharField(max_length=100)
     imagen = models.TextField()
 
     def __str__(self):
-        return str(self.articulo.id)
+        return self.nombre
