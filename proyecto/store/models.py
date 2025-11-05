@@ -10,7 +10,6 @@ class Producto(models.Model):
     descripcion = models.TextField()
     precio = models.DecimalField(max_digits=10, decimal_places=2)
     precio_oferta = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
-    marca = models.CharField(max_length=100)
     genero=models.CharField(max_length=50)
     color=models.CharField(max_length=50)
     material=models.CharField(max_length=100)
@@ -20,6 +19,7 @@ class Producto(models.Model):
     fecha_creacion=models.DateTimeField(auto_now_add=True)
     fecha_actualizacion=models.DateTimeField(auto_now=True)
     categoria=models.ForeignKey('Categoria', on_delete=models.CASCADE, related_name='productos')
+    marca = models.ForeignKey('Marca', on_delete=models.CASCADE, related_name='productos')
     def __str__(self):
         return self.nombre
 class Categoria(models.Model):
