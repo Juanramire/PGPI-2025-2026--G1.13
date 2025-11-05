@@ -94,7 +94,8 @@
         "es_destacado": true,
         "categoria": 1,
         "fecha_creacion": "2024-01-01T10:00:00Z",
-        "fecha_actualizacion": "2024-01-01T10:00:00Z"
+        "fecha_actualizacion": "2024-01-01T10:00:00Z",
+        "imagen": "productos/logo.png"
       }
     },
     {
@@ -114,7 +115,9 @@
         "es_destacado": false,
         "categoria": 2,
         "fecha_creacion": "2024-01-02T11:00:00Z",
-        "fecha_actualizacion": "2024-01-02T11:00:00Z"
+        "fecha_actualizacion": "2024-01-02T11:00:00Z",
+        "imagen": "productos/logo.png"
+
       }
     },
     {
