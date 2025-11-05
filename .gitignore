@@ -4,3 +4,4 @@ __pycache__/
 *.py[cod]
 proyecto/db.sqlite3
 store/migrations/*
+.vscode/*
