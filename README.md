@@ -77,10 +77,3 @@ python manage.py runserver
 Tras ejecutar `runserver`, el proyecto queda disponible en `http://127.0.0.1:8000/`.  
 - La página principal (`/`) muestra el catálogo de productos, con soporte para filtrar por nombre usando la query `?nombre=...`.  
 - La autenticación se maneja a través de `/login/`, `/logout/` y `/register/`.
-
-## Siguientes pasos sugeridos
-- Crear un superusuario con `python manage.py createsuperuser` para gestionar el catálogo desde `/admin/`.
-- Configurar un archivo `requirements.txt` para fijar versiones si se despliega en otros entornos.
-- Añadir tests funcionales en `store/tests.py` para validar flujos clave (registro, login, filtrado de productos).
-
-Con esta guía tendrás una referencia rápida de cómo está organizado el proyecto y cómo levantarlo localmente.
