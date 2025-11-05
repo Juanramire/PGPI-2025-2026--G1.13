@@ -3,7 +3,7 @@ from django.http import HttpResponse
 from django.template import loader
 from django.contrib.auth import authenticate, login
 from django.shortcuts import redirect
-from .models import Producto
+from .models import Producto, Categoria
 from django.contrib.auth import logout
 from .forms import ClienteRegistroForm
 from django.contrib import messages
@@ -22,19 +22,25 @@ def escaparates_api(request):
     articulo_obj = get_object_or_404(Articulo, pk=id)
     return render(request, 'articulo.html', {'articulo': articulo_obj}) """
 def productos(request):
-    nombre=request.GET.get('nombre')
+    nombre = request.GET.get('nombre')
+    categoria_id = request.GET.get('categoria')
+    
+    productos = Producto.objects.all()
+    
     if nombre:
-        productos = Producto.objects.filter(nombre__icontains=nombre)
-    else:
-        productos = Producto.objects.all()
+        productos = productos.filter(nombre__icontains=nombre)
+    
+    if categoria_id:
+        productos = productos.filter(categoria_id=categoria_id)
+    
     contexto = {'productos': productos}
-    return HttpResponse(render(request, 'productos.html',contexto))
+    return HttpResponse(render(request, 'productos.html', contexto))
 def login_view(request):
     if request.method == 'POST':
-        username = request.POST['username']
+        email = request.POST['email']
         password = request.POST['password']
 
-        user = authenticate(request, username=username, password=password)
+        user = authenticate(request, email=email, password=password)
         if user is not None:
             login(request, user)
             return redirect('/')  # redirige a tu página principal
@@ -58,3 +64,8 @@ def registro_view(request):
         form = ClienteRegistroForm()
     
     return render(request, 'register.html', {'form': form})
+
+def categorias_globales(request):
+    return {
+        'categorias_navbar': Categoria.objects.all()
+    }

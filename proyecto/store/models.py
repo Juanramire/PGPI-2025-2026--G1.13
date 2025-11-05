@@ -18,6 +18,7 @@ class Producto(models.Model):
     es_destacado=models.BooleanField(default=False)
     fecha_creacion=models.DateTimeField(auto_now_add=True)
     fecha_actualizacion=models.DateTimeField(auto_now=True)
+    imagen = models.ImageField(upload_to='productos/', blank=True, null=True)
     categoria=models.ForeignKey('Categoria', on_delete=models.CASCADE, related_name='productos')
     marca = models.ForeignKey('Marca', on_delete=models.CASCADE, related_name='productos')
     def __str__(self):
@@ -25,15 +26,15 @@ class Producto(models.Model):
 class Categoria(models.Model):
     nombre = models.CharField(max_length=100)
     descripcion = models.TextField()
-    imagen = models.TextField()
+    imagen = models.ImageField(upload_to='categorias/', blank=True, null=True)
     def __str__(self):
         return self.nombre
 class Marca(models.Model):
     nombre = models.CharField(max_length=100)
-    imagen = models.TextField()
+    imagen = models.ImageField(upload_to='marcas/', blank=True, null=True)
 
     def __str__(self):
-        return str(self.articulo.id)
+        return self.nombre
     
 class Cliente(AbstractUser):
     # Hereda todos los campos de User (username, email, password, etc.)

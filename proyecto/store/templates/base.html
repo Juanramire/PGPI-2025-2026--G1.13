@@ -36,12 +36,10 @@
                     <a class="nav-link dropdown-toggle" href="#" id="categorias" role="button" data-bs-toggle="dropdown">
                         Categorías
                     </a>
-                    <ul class="dropdown-menu">
-                        <li><a class="dropdown-item" href="#">Ropa</a></li>
-                        <li><a class="dropdown-item" href="#">Electrónica</a></li>
-                        <li><a class="dropdown-item" href="#">Hogar</a></li>
-                        <li><hr class="dropdown-divider"></li>
-                        <li><a class="dropdown-item" href="#">Ver todas</a></li>
+                    <ul class="dropdown-menu" aria-labelledby="categorias">
+                        {% for categoria in categorias_navbar %}
+                            <li><a class="dropdown-item" href="/?categoria={{ categoria.id }}">{{ categoria.nombre }}</a></li>
+                        {% endfor %}
                     </ul>
                     
                 </li>
