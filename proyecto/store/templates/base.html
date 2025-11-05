@@ -16,7 +16,7 @@
 <!-- ==================== NAVBAR ==================== -->
 <nav class="navbar navbar-expand-lg navbar-dark bg-dark sticky-top">
     <div class="container-fluid">
-        <a class="navbar-brand fw-bold" href="#">
+        <a class="navbar-brand fw-bold" href="/">
             <img src="{% static 'img/logo.png' %}" alt="Logo" height="35">
             MiTienda
         </a>
@@ -26,8 +26,8 @@
         </button>
 
         <div class="collapse navbar-collapse" id="navbarContent">
-            <form class="d-flex ms-auto me-4" method="GET" action="#">
-                <input class="form-control me-2" type="search" placeholder="Buscar productos..." name="q">
+            <form class="d-flex ms-auto me-4" method="GET" action="/">
+                <input class="form-control me-2" type="search" placeholder="Buscar productos..." name="nombre">
                 <button class="btn btn-outline-light" type="submit">Buscar</button>
             </form>
 
@@ -43,6 +43,7 @@
                         <li><hr class="dropdown-divider"></li>
                         <li><a class="dropdown-item" href="#">Ver todas</a></li>
                     </ul>
+                    
                 </li>
 
                 <li class="nav-item">
@@ -85,30 +86,54 @@
         const productos=localStorage.getItem('carrito') ? JSON.parse(localStorage.getItem('carrito')) : [];
         const carritoContenido = document.getElementById('carrito-contenido');
         carritoContenido.innerHTML = ''; // Limpiar contenido previo
+        let suma=0;
         for (producto of productos){
             const item = document.createElement('div');
             item.id='carrito-item-' + producto.id;
             item.classList.add('carrito-item', 'd-flex', 'justify-content-between', 'align-items-center', 'mb-2');
             item.setAttribute('data-id', producto.id);
+            
 
             item.innerHTML = `
-                <div>
-                    <strong>${producto.nombre}</strong><br>
-                    <small>${producto.precio.toFixed(2)} €</small>
-                </div>
-                <div>
-                    <button class="btn btn-sm btn-outline-success" onclick="increment(${producto.id})">+</button>
-                    <span class="cantidad">${producto.cantidad}</span>
-                    <button class="btn btn-sm btn-outline-warning" onclick="decrement(${producto.id})">-</button>
-                    <button class="btn btn-sm btn-outline-danger ms-1" onclick="eliminarProducto(${producto.id})">X</button>
-                </div>
-            `;
+               <div class="producto-item d-flex justify-content-between align-items-center">
+    <div class="producto-info">
+        <p class="m-0">
+            <strong>${producto.nombre}</strong>  
+            <small>${(producto.precio * producto.cantidad).toFixed(2)} €</small>
+        </p>
+    </div>
+    <div class="producto-controles d-flex align-items-center">
+        <button class="btn btn-sm btn-outline-success"
+            style="padding: 0.1rem 0.3rem; font-size: 0.7rem;"
+            onclick="increment(${producto.id})">+</button>
+        <span class="cantidad mx-1">${producto.cantidad}</span>
+        <button class="btn btn-sm btn-outline-warning"
+            style="padding: 0.1rem 0.3rem; font-size: 0.7rem;"
+            onclick="decrement(${producto.id})">-</button>
+        <button class="btn btn-sm btn-outline-danger ms-1"
+            style="padding: 0.1rem 0.3rem; font-size: 0.7rem;"
+            onclick="eliminarProducto(${producto.id})">X</button>
+    </div>
+</div>`;
+
+            suma += producto.precio * producto.cantidad;
             
 
             carritoContenido.appendChild(item);
         }
         const botonCarrito=document.getElementById('carritoDropdown');
         botonCarrito.textContent=`🛒 Carrito (${productos.length})`;
+        
+        if(productos.length > 0) {
+            carritoContenido.innerHTML += `<div class='text-end fw-bold'>Total: ${suma.toFixed(2)} €</div>`;
+            const buttonFinalizar = document.createElement('button');
+            buttonFinalizar.classList.add('btn', 'btn-primary', 'w-100' ,'mt-2');
+            buttonFinalizar.textContent = 'Continuar compra';
+            carritoContenido.appendChild(buttonFinalizar);
+        }
+        else{
+            carritoContenido.innerHTML = '<p class="text-center text-muted">El carrito está vacío.</p>';
+        }
         
     }
     function toggleCarrito() {
@@ -123,7 +148,7 @@
         let productos=localStorage.getItem('carrito') ? JSON.parse(localStorage.getItem('carrito')) : [];
         const productoExistente = productos.find(p => p.id === producto.id);
         if(!productoExistente) {
-            productos.push({...producto, cantidad: 1});
+            productos.push({...producto,precio:parseFloat(producto.precio.replace(",",".")), cantidad: 1});
         }
         else{
             productos[productos.findIndex(p => p.id === producto.id)].cantidad += 1;

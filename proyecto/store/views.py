@@ -5,6 +5,8 @@ from django.contrib.auth import authenticate, login
 from django.shortcuts import redirect
 from .models import Producto
 from django.contrib.auth import logout
+from .forms import ClienteRegistroForm
+from django.contrib import messages
 """ def index(request):
     escaparates = Escaparate.objects.all()
     contexto={'escaparates':list(escaparates)}
@@ -20,7 +22,11 @@ def escaparates_api(request):
     articulo_obj = get_object_or_404(Articulo, pk=id)
     return render(request, 'articulo.html', {'articulo': articulo_obj}) """
 def productos(request):
-    productos = Producto.objects.all()
+    nombre=request.GET.get('nombre')
+    if nombre:
+        productos = Producto.objects.filter(nombre__icontains=nombre)
+    else:
+        productos = Producto.objects.all()
     contexto = {'productos': productos}
     return HttpResponse(render(request, 'productos.html',contexto))
 def login_view(request):
@@ -38,3 +44,17 @@ def login_view(request):
 def logout_view(request):
     logout(request)
     return redirect('/')  # redirige a tu página principal
+
+
+def registro_view(request):
+    if request.method == 'POST':
+        form = ClienteRegistroForm(request.POST)
+        if form.is_valid():
+            user = form.save()  # Aquí Django usa set_password automáticamente
+            login(request, user)  # Inicia sesión después del registro
+            messages.success(request, 'Tu cuenta ha sido creada correctamente.')
+            return redirect('/')  # redirige a la página principal o donde quieras
+    else:
+        form = ClienteRegistroForm()
+    
+    return render(request, 'register.html', {'form': form})

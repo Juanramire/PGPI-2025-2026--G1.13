@@ -9,17 +9,29 @@
     <!-- ==================== GRID DE PRODUCTOS ==================== -->
     <div class="row g-4">
         {% for producto in productos %}
-            <div class="col-12 col-sm-6 col-md-4">
-                <div class="card h-100 shadow-sm">
-                    <img src="{{ product.image.url }}" class="card-img-top" alt="{{ product.name }}">
-                    <div class="card-body d-flex flex-column">
-                        <h5 class="card-title">{{ product.name }}</h5>
-                        <p class="card-text text-muted mb-1">Categoría: {{ product.category.name }}</p>
-                        <p class="card-text fw-bold mb-3">Precio: {{ product.price }} €</p>
-                        <button class="btn btn-warning mt-auto" onclick="añadirCarrito({nombre:'{{producto.nombre|escapejs}}',id:'{{producto.id}}',precio:{{producto.precio}}})">Añadir al carrito 🛒</button>
-                    </div>
-                </div>
+<div class="col-12 col-sm-6 col-md-4">
+    <div class="card h-100 shadow-sm d-flex flex-row align-items-stretch">
+        <!-- Información del producto -->
+        <div class="card-body d-flex flex-column justify-content-between flex-grow-1">
+            <div>
+                <h5 class="card-title">{{ producto.nombre }}</h5>
+                <p class="card-text text-muted mb-1">Categoría: {{ producto.categoria.nombre }}</p>
+                <p class="card-text fw-bold mb-3">Precio: {{ producto.precio }} €</p>
             </div>
+            <button class="btn btn-warning mt-auto"
+                onclick="añadirCarrito({nombre:'{{producto.nombre|escapejs}}',id:'{{producto.id}}',precio:'{{producto.precio}}'})">
+                Añadir al carrito 🛒
+            </button>
+        </div>
+
+        <!-- Imagen del producto -->
+        <div class="card-img-container">
+            <img src="{{ producto.image.url }}" class="card-img-right" alt="{{ producto.nombre }}">
+        </div>
+    </div>
+</div>
+
+
         {% empty %}
             <div class="col-12 text-center text-muted">
                 <p>No hay productos disponibles en este momento.</p>

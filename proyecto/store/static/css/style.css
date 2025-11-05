@@ -45,6 +45,54 @@ footer {
     border-radius: 10px;
     box-shadow: 0 4px 12px rgba(0,0,0,0.2);
   }
+  .producto-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.4rem 0.8rem;
+    border-bottom: 1px solid #ddd;
+    min-height: 50px; /* asegura altura consistente */
+}
+
+.producto-info {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-grow: 1;
+    min-width: 0; /* evita que el texto empuje los botones */
+}
+
+.producto-info strong {
+    font-size: 0.95rem;
+    white-space: nowrap; /* evita que el nombre salte de línea */
+}
+
+.producto-info small {
+    font-size: 0.85rem;
+    color: #666;
+    margin-left: 1rem;
+    white-space: nowrap;
+}
+
+.producto-controles {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    flex-shrink: 0; /* evita que los botones se vayan abajo */
+}
+
+.producto-controles .btn {
+    padding: 0.2rem 0.4rem;
+    font-size: 0.75rem;
+    line-height: 1;
+}
+
+.cantidad {
+    min-width: 1.2rem;
+    text-align: center;
+}
+
 
 /* ==================== RESPONSIVE ==================== */
 @media (max-width: 768px) {

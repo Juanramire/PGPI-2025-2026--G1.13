@@ -7,7 +7,7 @@
     <div class="card shadow-sm p-4" style="width: 100%; max-width: 400px;">
         <h3 class="card-title text-center mb-4">Iniciar sesión</h3>
 
-        {% if form.errors %}
+        {% if error %}
             <div class="alert alert-danger" role="alert">
                 Usuario o contraseña incorrectos.
             </div>
@@ -30,7 +30,7 @@
         </form>
 
         <p class="text-center mt-3">
-            ¿No tienes cuenta? <a href="">Regístrate</a>
+            ¿No tienes cuenta? <a href="/register/">Regístrate</a>
         </p>
     </div>
 </div>
