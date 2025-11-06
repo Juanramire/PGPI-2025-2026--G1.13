@@ -60,6 +60,7 @@ python -m venv .venv
 
 # Instalar dependencias principales
 pip install django
+pip install Pillow
 
 # Generar migraciones (se creó 0002_alter_cliente_email_alter_producto_marca)
 python manage.py makemigrations
