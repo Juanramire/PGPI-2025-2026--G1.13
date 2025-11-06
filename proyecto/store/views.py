@@ -29,12 +29,15 @@ def productos(request):
     
     if nombre:
         productos = productos.filter(nombre__icontains=nombre)
+
+    categorias = Categoria.objects.all()
     
     if categoria_id:
         productos = productos.filter(categoria_id=categoria_id)
-    
-    contexto = {'productos': productos}
+
+    contexto = {'productos': productos, 'categorias_navbar': categorias}
     return HttpResponse(render(request, 'productos.html', contexto))
+
 def login_view(request):
     if request.method == 'POST':
         email = request.POST['email']
@@ -47,6 +50,7 @@ def login_view(request):
         else:
             return render(request, 'login.html', {'error': 'Credenciales incorrectas'})
     return render(request, 'login.html')
+
 def logout_view(request):
     logout(request)
     return redirect('/')  # redirige a tu página principal
@@ -64,8 +68,3 @@ def registro_view(request):
         form = ClienteRegistroForm()
     
     return render(request, 'register.html', {'form': form})
-
-def categorias_globales(request):
-    return {
-        'categorias_navbar': Categoria.objects.all()
-    }
