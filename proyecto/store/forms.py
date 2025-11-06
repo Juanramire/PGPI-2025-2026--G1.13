@@ -3,6 +3,13 @@ from django.contrib.auth.forms import UserCreationForm
 from .models import Cliente
 
 class ClienteRegistroForm(UserCreationForm):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for name, field in self.fields.items():
+            existing_classes = field.widget.attrs.get('class', '')
+            field.widget.attrs['class'] = f"{existing_classes} form-control".strip()
+            field.widget.attrs.setdefault('placeholder', field.label)
+
     class Meta:
         model = Cliente
         fields = [
