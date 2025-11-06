@@ -1,0 +1,139 @@
+{% extends "base.html" %}
+
+{% block title %}{{ producto.nombre }} - MiTienda{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="/">Inicio</a></li>
+            <li class="breadcrumb-item"><a href="/?categoria={{ producto.categoria.id }}">{{ producto.categoria.nombre }}</a></li>
+            <li class="breadcrumb-item active" aria-current="page">{{ producto.nombre }}</li>
+        </ol>
+    </nav>
+
+    <div class="row mt-4">
+        <!-- Imagen del producto -->
+        <div class="col-md-6">
+            <div class="card shadow-sm">
+                <div class="card-body p-4">
+                    {% if producto.imagen %}
+                        <img src="{{ producto.imagen.url }}" class="img-fluid rounded" alt="{{ producto.nombre }}">
+                    {% else %}
+                        <img src="https://via.placeholder.com/500?text=Sin+Imagen" class="img-fluid rounded" alt="Sin imagen">
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Detalles del producto -->
+        <div class="col-md-6">
+            <div class="card shadow-sm h-100">
+                <div class="card-body">
+                    <h1 class="card-title mb-3">{{ producto.nombre }}</h1>
+                    
+                    <!-- Marca -->
+                    <p class="text-muted mb-2">
+                        <strong>Marca:</strong> {{ producto.marca.nombre }}
+                    </p>
+                    
+                    <!-- Categoría -->
+                    <p class="text-muted mb-3">
+                        <strong>Categoría:</strong> {{ producto.categoria.nombre }}
+                    </p>
+                    
+                    <!-- Descripción -->
+                    <div class="mb-4">
+                        <h5>Descripción</h5>
+                        <p class="text-secondary">{{ producto.descripcion }}</p>
+                    </div>
+                    
+                    <!-- Características -->
+                    <div class="mb-4">
+                        <h5>Características</h5>
+                        <ul class="list-unstyled">
+                            <li><strong>Género:</strong> {{ producto.genero }}</li>
+                            <li><strong>Color:</strong> {{ producto.color }}</li>
+                            <li><strong>Material:</strong> {{ producto.material }}</li>
+                        </ul>
+                    </div>
+                    
+                    <!-- Stock -->
+                    <div class="mb-4">
+                        {% if producto.esta_disponible and producto.stock > 0 %}
+                            <span class="badge bg-success">✓ Disponible ({{ producto.stock }} unidades)</span>
+                        {% else %}
+                            <span class="badge bg-danger">✗ Sin stock</span>
+                        {% endif %}
+                        
+                        {% if producto.es_destacado %}
+                            <span class="badge bg-warning text-dark ms-2">⭐ Destacado</span>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Precio -->
+                    <div class="mb-4">
+                        {% if producto.precio_oferta %}
+                            <p class="mb-1">
+                                <span class="text-muted text-decoration-line-through fs-5">{{ producto.precio }} €</span>
+                            </p>
+                            <p class="text-danger fw-bold fs-2 mb-0">{{ producto.precio_oferta }} €</p>
+                            <small class="text-success">
+                                ¡Ahorra {{ producto.precio|floatformat:2|add:"-"|add:producto.precio_oferta|floatformat:2 }} €!
+                            </small>
+                        {% else %}
+                            <p class="fw-bold fs-2 mb-0">{{ producto.precio }} €</p>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Botones de acción -->
+                    <div class="d-grid gap-2">
+                        {% if producto.esta_disponible and producto.stock > 0 %}
+                            <button class="btn btn-warning btn-lg" 
+                                onclick="añadirCarrito({nombre:'{{producto.nombre|escapejs}}',id:'{{producto.id}}',precio:'{% if producto.precio_oferta %}{{producto.precio_oferta}}{% else %}{{producto.precio}}{% endif %}'})">
+                                🛒 Añadir al carrito
+                            </button>
+                        {% else %}
+                            <button class="btn btn-secondary btn-lg" disabled>
+                                Producto no disponible
+                            </button>
+                        {% endif %}
+                        <a href="/" class="btn btn-outline-secondary">← Volver al catálogo</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Tallas disponibles (si existen) -->
+    {% if producto.tallas.exists %}
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title">Tallas disponibles</h5>
+                    <div class="row g-3">
+                        {% for talla in producto.tallas.all %}
+                        <div class="col-auto">
+                            <div class="card {% if talla.stock > 0 %}border-success{% else %}border-danger{% endif %}">
+                                <div class="card-body text-center p-3">
+                                    <h6 class="mb-1">{{ talla.talla }}</h6>
+                                    <small class="{% if talla.stock > 0 %}text-success{% else %}text-danger{% endif %}">
+                                        {% if talla.stock > 0 %}
+                                            {{ talla.stock }} disponibles
+                                        {% else %}
+                                            Sin stock
+                                        {% endif %}
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

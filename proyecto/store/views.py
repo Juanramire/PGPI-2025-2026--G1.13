@@ -1,4 +1,4 @@
-from django.shortcuts import render
+from django.shortcuts import render, get_object_or_404
 from django.http import HttpResponse
 from django.template import loader
 from django.contrib.auth import authenticate, login
@@ -68,3 +68,12 @@ def registro_view(request):
         form = ClienteRegistroForm()
     
     return render(request, 'register.html', {'form': form})
+
+def detalle_producto(request, id):
+    producto = get_object_or_404(Producto, pk=id)
+    categorias = Categoria.objects.all()
+    contexto = {
+        'producto': producto,
+        'categorias_navbar': categorias
+    }
+    return render(request, 'detalle_producto.html', contexto)

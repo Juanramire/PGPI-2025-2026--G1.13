@@ -114,9 +114,26 @@ footer {
     transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
-.card:hover {
+.producto-card:hover {
     transform: translateY(-5px);
     box-shadow: 0 8px 16px rgba(0,0,0,0.15) !important;
+}
+
+/* Breadcrumb personalizado */
+.breadcrumb {
+    background-color: #f8f9fa;
+    padding: 0.75rem 1rem;
+    border-radius: 0.375rem;
+}
+
+.breadcrumb-item a {
+    color: #6c757d;
+    text-decoration: none;
+}
+
+.breadcrumb-item a:hover {
+    color: #212529;
+    text-decoration: underline;
 }
 
 

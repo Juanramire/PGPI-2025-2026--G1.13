@@ -10,16 +10,23 @@
     <div class="row g-4">
         {% for producto in productos %}
 <div class="col-12 col-sm-6 col-md-4">
-    <div class="card h-100 shadow-sm d-flex flex-row align-items-stretch">
+    <div class="card h-100 shadow-sm d-flex flex-row align-items-stretch producto-card" style="cursor: pointer;" onclick="window.location.href='/producto/{{ producto.id }}/'">
         <!-- Información del producto -->
         <div class="card-body d-flex flex-column justify-content-between flex-grow-1">
             <div>
                 <h5 class="card-title">{{ producto.nombre }}</h5>
                 <p class="card-text text-muted mb-1">Categoría: {{ producto.categoria.nombre }}</p>
-                <p class="card-text fw-bold mb-3">Precio: {{ producto.precio }} €</p>
+                <p class="card-text fw-bold mb-3">Precio: 
+                    {% if producto.precio_oferta %}
+                        <span class="text-danger">{{ producto.precio_oferta }} €</span>
+                        <small class="text-muted text-decoration-line-through">{{ producto.precio }} €</small>
+                    {% else %}
+                        {{ producto.precio }} €
+                    {% endif %}
+                </p>
             </div>
-            <button class="btn btn-warning mt-auto"
-                onclick="añadirCarrito({nombre:'{{producto.nombre|escapejs}}',id:'{{producto.id}}',precio:'{{producto.precio}}'})">
+            <button class="btn btn-warning mt-auto" 
+                onclick="event.stopPropagation(); añadirCarrito({nombre:'{{producto.nombre|escapejs}}',id:'{{producto.id}}',precio:'{% if producto.precio_oferta %}{{producto.precio_oferta}}{% else %}{{producto.precio}}{% endif %}'})">
                 Añadir al carrito 🛒
             </button>
         </div>
