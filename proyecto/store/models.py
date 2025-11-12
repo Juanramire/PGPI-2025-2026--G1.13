@@ -1,10 +1,21 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 
-class TallaProducto(models.Model):
-    talla = models.CharField(max_length=30)
-    stock = models.PositiveIntegerField()
-    producto = models.ForeignKey('Producto', on_delete=models.CASCADE, related_name='tallas')
+class Categoria(models.Model):
+    nombre = models.CharField(max_length=100)
+    descripcion = models.TextField()
+    imagen = models.ImageField(upload_to='categorias/', blank=True, null=True)
+    
+    def __str__(self):
+        return self.nombre
+
+class Marca(models.Model):
+    nombre = models.CharField(max_length=100)
+    imagen = models.ImageField(upload_to='marcas/', blank=True, null=True)
+
+    def __str__(self):
+        return self.nombre
+
 class Producto(models.Model):
     nombre = models.CharField(max_length=100)
     descripcion = models.TextField()
@@ -13,29 +24,31 @@ class Producto(models.Model):
     genero=models.CharField(max_length=50)
     color=models.CharField(max_length=50)
     material=models.CharField(max_length=100)
-    stock= models.PositiveIntegerField()
-    esta_disponible=models.BooleanField(default=True)
     es_destacado=models.BooleanField(default=False)
     fecha_creacion=models.DateTimeField(auto_now_add=True)
     fecha_actualizacion=models.DateTimeField(auto_now=True)
     imagen = models.ImageField(upload_to='productos/', blank=True, null=True)
-    categoria=models.ForeignKey('Categoria', on_delete=models.CASCADE, related_name='productos')
-    marca = models.ForeignKey('Marca', on_delete=models.CASCADE, related_name='productos')
-    def __str__(self):
-        return self.nombre
-class Categoria(models.Model):
-    nombre = models.CharField(max_length=100)
-    descripcion = models.TextField()
-    imagen = models.ImageField(upload_to='categorias/', blank=True, null=True)
-    def __str__(self):
-        return self.nombre
-class Marca(models.Model):
-    nombre = models.CharField(max_length=100)
-    imagen = models.ImageField(upload_to='marcas/', blank=True, null=True)
+    categoria = models.ForeignKey(Categoria, on_delete=models.CASCADE, related_name='productos')
+    marca = models.ForeignKey(Marca, on_delete=models.CASCADE, related_name='productos')
 
     def __str__(self):
         return self.nombre
+
+    @property
+    def esta_disponible(self):
+        """Un producto está disponible si tiene al menos una talla con stock."""
+        if not self.tallas.exists():
+            return False
+        return self.tallas.filter(stock__gt=0).exists()
+
     
+class TallaProducto(models.Model):
+    talla = models.CharField(max_length=30)
+    stock = models.PositiveIntegerField()
+    producto = models.ForeignKey(Producto, on_delete=models.CASCADE, related_name='tallas')
+    def __str__(self):
+        return self.talla
+
 class Cliente(AbstractUser):
     # Hereda todos los campos de User (username, email, password, etc.)
     
@@ -93,7 +106,7 @@ class ItemPedido(models.Model):
     pedido = models.ForeignKey(Pedido, on_delete=models.CASCADE, related_name='items')
     # Relación de 'uno a muchos': Un producto puede estar en muchos ítems de pedido.
     # Aquí se relaciona con tu modelo Producto original.
-    producto = models.ForeignKey('Producto', on_delete=models.PROTECT, related_name='items') # Se usa PROTECT para no borrar el Producto si se borra el Item
+    producto = models.ForeignKey(Producto, on_delete=models.PROTECT, related_name='items') # Se usa PROTECT para no borrar el Producto si se borra el Item
     
     talla = models.CharField(max_length=30) # El detalle de la talla para este ítem específico
     cantidad = models.PositiveIntegerField()

@@ -72,8 +72,15 @@ def registro_view(request):
 def detalle_producto(request, id):
     producto = get_object_or_404(Producto, pk=id)
     categorias = Categoria.objects.all()
+
+    ahorro = None
+    if producto.precio_oferta:
+        ahorro = producto.precio - producto.precio_oferta
+
     contexto = {
         'producto': producto,
-        'categorias_navbar': categorias
+        'categorias_navbar': categorias,
+        'ahorro': ahorro
     }
     return render(request, 'detalle_producto.html', contexto)
+

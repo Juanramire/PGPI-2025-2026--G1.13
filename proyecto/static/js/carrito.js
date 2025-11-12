@@ -10,14 +10,15 @@
  */
 function añadirCarrito(producto) {
     const productos = obtenerCarrito();
-    const productoExistente = productos.find(p => p.id === producto.id);
+    // Un producto es único por su ID y su talla
+    const productoExistente = productos.find(p => p.id === producto.id && p.talla === producto.talla);
 
     if (productoExistente) {
         productoExistente.cantidad += 1;
     } else {
         // Aseguramos que el precio sea un número flotante
         const precioNumerico = parseFloat(String(producto.precio).replace(",", "."));
-        productos.push({ ...producto, precio: precioNumerico, cantidad: 1 });
+        productos.push({ ...producto, precio: precioNumerico, cantidad: 1, talla: producto.talla });
     }
 
     guardarCarrito(productos);
@@ -27,10 +28,11 @@ function añadirCarrito(producto) {
 /**
  * Incrementa la cantidad de un producto en el carrito.
  * @param {string} id - El ID del producto.
+ * @param {string} talla - La talla del producto.
  */
-function incrementar(id) {
+function incrementar(id, talla) {
     const productos = obtenerCarrito();
-    const producto = productos.find(p => p.id == id);
+    const producto = productos.find(p => p.id == id && p.talla === talla);
     if (producto) {
         producto.cantidad += 1;
     }
@@ -41,17 +43,18 @@ function incrementar(id) {
 /**
  * Decrementa la cantidad de un producto. Si la cantidad llega a 0, lo elimina.
  * @param {string} id - El ID del producto.
+ * @param {string} talla - La talla del producto.
  */
-function decrementar(id) {
+function decrementar(id, talla) {
     let productos = obtenerCarrito();
-    const index = productos.findIndex(p => p.id == id);
+    const index = productos.findIndex(p => p.id == id && p.talla === talla);
 
     if (index !== -1) {
         if (productos[index].cantidad > 1) {
             productos[index].cantidad -= 1;
         } else {
             // Si la cantidad es 1, eliminamos el producto
-            productos = productos.filter(p => p.id != id);
+            productos.splice(index, 1);
         }
     }
 
@@ -61,11 +64,12 @@ function decrementar(id) {
 
 /**
  * Elimina un producto completamente del carrito.
- * @param {string} id - El ID del producto a eliminar.
+ * @param {string} id - El ID del producto.
+ * @param {string} talla - La talla del producto.
  */
-function eliminarProducto(id) {
+function eliminarProducto(id, talla) {
     let productos = obtenerCarrito();
-    productos = productos.filter(p => p.id != id);
+    productos = productos.filter(p => !(p.id == id && p.talla === talla));
     guardarCarrito(productos);
     actualizarVistaCarrito();
 }
@@ -90,14 +94,14 @@ function actualizarVistaCarrito() {
             const itemHTML = `
                 <div class="producto-item">
                     <div class="producto-info">
-                        <strong>${producto.nombre}</strong>
+                        <strong>${producto.nombre}</strong> (Talla: ${producto.talla})
                         <small>${subtotal.toFixed(2)} €</small>
                     </div>
                     <div class="producto-controles">
-                        <button class="btn btn-sm btn-outline-secondary" onclick="incrementar('${producto.id}')">+</button>
+                        <button class="btn btn-sm btn-outline-secondary" onclick="incrementar('${producto.id}', '${producto.talla}')">+</button>
                         <span class="cantidad">${producto.cantidad}</span>
-                        <button class="btn btn-sm btn-outline-secondary" onclick="decrementar('${producto.id}')">-</button>
-                        <button class="btn btn-sm btn-outline-danger ms-2" onclick="eliminarProducto('${producto.id}')">✕</button>
+                        <button class="btn btn-sm btn-outline-secondary" onclick="decrementar('${producto.id}', '${producto.talla}')">-</button>
+                        <button class="btn btn-sm btn-outline-danger ms-2" onclick="eliminarProducto('${producto.id}', '${producto.talla}')">✕</button>
                     </div>
                 </div>`;
             carritoContenido.innerHTML += itemHTML;

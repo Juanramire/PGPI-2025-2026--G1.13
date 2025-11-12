@@ -58,19 +58,6 @@
                         </ul>
                     </div>
                     
-                    <!-- Stock -->
-                    <div class="mb-4">
-                        {% if producto.esta_disponible and producto.stock > 0 %}
-                            <span class="badge bg-success">✓ Disponible ({{ producto.stock }} unidades)</span>
-                        {% else %}
-                            <span class="badge bg-danger">✗ Sin stock</span>
-                        {% endif %}
-                        
-                        {% if producto.es_destacado %}
-                            <span class="badge bg-warning text-dark ms-2">⭐ Destacado</span>
-                        {% endif %}
-                    </div>
-                    
                     <!-- Precio -->
                     <div class="mb-4">
                         {% if producto.precio_oferta %}
@@ -79,18 +66,35 @@
                             </p>
                             <p class="text-danger fw-bold fs-2 mb-0">{{ producto.precio_oferta }} €</p>
                             <small class="text-success">
-                                ¡Ahorra {{ producto.precio|floatformat:2|add:"-"|add:producto.precio_oferta|floatformat:2 }} €!
+                                ¡Ahorra {{ ahorro|floatformat:2 }} €!
                             </small>
                         {% else %}
                             <p class="fw-bold fs-2 mb-0">{{ producto.precio }} €</p>
                         {% endif %}
                     </div>
                     
-                    <!-- Botones de acción -->
-                    <div class="d-grid gap-2">
-                        {% if producto.esta_disponible and producto.stock > 0 %}
-                            <button class="btn btn-warning btn-lg" 
-                                onclick="añadirCarrito({nombre:'{{producto.nombre|escapejs}}',id:'{{producto.id}}',precio:'{% if producto.precio_oferta %}{{producto.precio_oferta}}{% else %}{{producto.precio}}{% endif %}'})">
+                    <!-- Formulario de Talla y Acción -->
+                    <div class="d-grid gap-2" id="form-compra">
+                        {% if producto.esta_disponible %}
+                            <div class="mb-3">
+                                <label for="talla-select" class="form-label"><strong>Selecciona una talla:</strong></label>
+                                <select class="form-select" id="talla-select">
+                                    <option value="" selected disabled>Elige...</option>
+                                    {% for talla in producto.tallas.all %}
+                                        {% if talla.stock > 0 %}
+                                            <option value="{{ talla.talla }}">{{ talla.talla }} ({{ talla.stock }} disponibles)</option>
+                                        {% else %}
+                                            <option value="{{ talla.talla }}" disabled>{{ talla.talla }} (Sin stock)</option>
+                                        {% endif %}
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <button id="btn-anadir-carrito" 
+                                    class="btn btn-warning btn-lg" 
+                                    data-producto-id="{{ producto.id }}"
+                                    data-producto-nombre="{{ producto.nombre|escapejs }}"
+                                    data-producto-precio="{% if producto.precio_oferta %}{{ producto.precio_oferta }}{% else %}{{ producto.precio }}{% endif %}"
+                                    disabled>
                                 🛒 Añadir al carrito
                             </button>
                         {% else %}
@@ -100,6 +104,7 @@
                         {% endif %}
                         <a href="/" class="btn btn-outline-secondary">← Volver al catálogo</a>
                     </div>
+
                 </div>
             </div>
         </div>
@@ -107,33 +112,40 @@
     
     <!-- Tallas disponibles (si existen) -->
     {% if producto.tallas.exists %}
-    <div class="row mt-4">
-        <div class="col-12">
-            <div class="card shadow-sm">
-                <div class="card-body">
-                    <h5 class="card-title">Tallas disponibles</h5>
-                    <div class="row g-3">
-                        {% for talla in producto.tallas.all %}
-                        <div class="col-auto">
-                            <div class="card {% if talla.stock > 0 %}border-success{% else %}border-danger{% endif %}">
-                                <div class="card-body text-center p-3">
-                                    <h6 class="mb-1">{{ talla.talla }}</h6>
-                                    <small class="{% if talla.stock > 0 %}text-success{% else %}text-danger{% endif %}">
-                                        {% if talla.stock > 0 %}
-                                            {{ talla.stock }} disponibles
-                                        {% else %}
-                                            Sin stock
-                                        {% endif %}
-                                    </small>
-                                </div>
-                            </div>
-                        </div>
-                        {% endfor %}
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
+        <!-- Este bloque ya no es necesario, la información se muestra en el selector -->
     {% endif %}
 </div>
+{% endblock %}
+
+{% block scripts %}
+    <script>
+            document.addEventListener('DOMContentLoaded', function() {
+            const tallaSelect = document.getElementById('talla-select');
+            const btnAnadir = document.getElementById('btn-anadir-carrito');
+
+            // Si existe el selector de tallas, añade el listener
+            if (tallaSelect) {
+                tallaSelect.addEventListener('change', function() {
+                    // Habilita el botón "Añadir al carrito" solo si se ha seleccionado una talla válida
+                    btnAnadir.disabled = !this.value;
+                });
+            }
+
+            // Si existe el botón de añadir, añade el listener para el clic
+            if (btnAnadir) {
+                btnAnadir.addEventListener('click', function() {
+                    const tallaSeleccionada = tallaSelect.value;
+                    
+                    // Construye el objeto del producto leyendo los atributos data-* del botón
+                    const producto = {
+                        id: this.dataset.productoId,
+                        nombre: this.dataset.productoNombre,
+                        precio: this.dataset.productoPrecio,
+                        talla: tallaSeleccionada
+                    };
+                    añadirCarrito(producto);
+                });
+            }
+        });
+    </script>
 {% endblock %}

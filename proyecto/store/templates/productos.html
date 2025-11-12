@@ -25,10 +25,9 @@
                     {% endif %}
                 </p>
             </div>
-            <button class="btn btn-warning mt-auto" 
-                onclick="event.stopPropagation(); añadirCarrito({nombre:'{{producto.nombre|escapejs}}',id:'{{producto.id}}',precio:'{% if producto.precio_oferta %}{{producto.precio_oferta}}{% else %}{{producto.precio}}{% endif %}'})">
-                Añadir al carrito 🛒
-            </button>
+            <a href="/producto/{{ producto.id }}/" class="btn btn-outline-primary mt-auto">
+                Ver detalles
+            </a>
         </div>
 
         <!-- Imagen del producto -->
