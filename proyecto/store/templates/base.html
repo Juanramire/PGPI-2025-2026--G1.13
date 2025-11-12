@@ -54,13 +54,13 @@
 
                 <li class="nav-item ms-3">
                     <button
-      class="btn btn-warning dropdown-toggle"
-      id="carritoDropdown"
-      data-bs-toggle="dropdown"
-      aria-expanded="false"
-  >
-      🛒 Carrito (0)
-  </button>
+                        class="btn btn-warning dropdown-toggle"
+                        id="carritoDropdown"
+                        data-bs-toggle="dropdown"
+                        aria-expanded="false"
+                    >
+                        🛒 Carrito (0)
+                    </button>
                         <div id="carrito-contenido" class="dropdown-menu p-3" style="min-width: 300px;" data-bs-auto-close="outside">
                         
                     </div>
@@ -69,131 +69,7 @@
         </div>
     </div>
 </nav>
-<script>
-    function eliminarProducto(id) {
-        eliminarProducto(id);
-    }
-    function increment(id) {
-        incrementar(id);
-    }
-    function decrement(id) {
-        decrementar(id);
-    }
-    window.onload = actualizarCarrito;
-  function actualizarCarrito() {
-        const productos=localStorage.getItem('carrito') ? JSON.parse(localStorage.getItem('carrito')) : [];
-        const carritoContenido = document.getElementById('carrito-contenido');
-        carritoContenido.innerHTML = ''; // Limpiar contenido previo
-        let suma=0;
-        for (producto of productos){
-            const item = document.createElement('div');
-            item.id='carrito-item-' + producto.id;
-            item.classList.add('carrito-item', 'd-flex', 'justify-content-between', 'align-items-center', 'mb-2');
-            item.setAttribute('data-id', producto.id);
-            
 
-            item.innerHTML = `
-               <div class="producto-item d-flex justify-content-between align-items-center">
-    <div class="producto-info">
-        <p class="m-0">
-            <strong>${producto.nombre}</strong>  
-            <small>${(producto.precio * producto.cantidad).toFixed(2)} €</small>
-        </p>
-    </div>
-    <div class="producto-controles d-flex align-items-center">
-        <button class="btn btn-sm btn-outline-success"
-            style="padding: 0.1rem 0.3rem; font-size: 0.7rem;"
-            onclick="increment(${producto.id})">+</button>
-        <span class="cantidad mx-1">${producto.cantidad}</span>
-        <button class="btn btn-sm btn-outline-warning"
-            style="padding: 0.1rem 0.3rem; font-size: 0.7rem;"
-            onclick="decrement(${producto.id})">-</button>
-        <button class="btn btn-sm btn-outline-danger ms-1"
-            style="padding: 0.1rem 0.3rem; font-size: 0.7rem;"
-            onclick="eliminarProducto(${producto.id})">X</button>
-    </div>
-</div>`;
-
-            suma += producto.precio * producto.cantidad;
-            
-
-            carritoContenido.appendChild(item);
-        }
-        const botonCarrito=document.getElementById('carritoDropdown');
-        botonCarrito.textContent=`🛒 Carrito (${productos.length})`;
-        
-        if(productos.length > 0) {
-            carritoContenido.innerHTML += `<div class='text-end fw-bold'>Total: ${suma.toFixed(2)} €</div>`;
-            const buttonFinalizar = document.createElement('button');
-            buttonFinalizar.classList.add('btn', 'btn-primary', 'w-100' ,'mt-2');
-            buttonFinalizar.textContent = 'Continuar compra';
-            carritoContenido.appendChild(buttonFinalizar);
-        }
-        else{
-            carritoContenido.innerHTML = '<p class="text-center text-muted">El carrito está vacío.</p>';
-        }
-        
-    }
-    function toggleCarrito() {
-        const carritoContenido = document.getElementById('carrito-contenido');
-        if(carritoContenido.style.display === 'block') {
-            carritoContenido.style.display = 'none';
-        } else {
-            carritoContenido.style.display = 'block';
-        }
-    }
-    function añadirCarrito(producto) {
-        let productos=localStorage.getItem('carrito') ? JSON.parse(localStorage.getItem('carrito')) : [];
-        const productoExistente = productos.find(p => p.id === producto.id);
-        if(!productoExistente) {
-            productos.push({...producto,precio:parseFloat(producto.precio.replace(",",".")), cantidad: 1});
-        }
-        else{
-            productos[productos.findIndex(p => p.id === producto.id)].cantidad += 1;
-        }
-        localStorage.setItem('carrito', JSON.stringify(productos));
-        actualizarCarrito();
-    }
-    function incrementar(id) {
-        let productos=localStorage.getItem('carrito') ? JSON.parse(localStorage.getItem('carrito')) : [];
-        const productoExistente = productos.find(p => p.id == id);
-        if(productoExistente) {
-            productos[productos.findIndex(p => p.id == id)].cantidad += 1;
-        }
-        localStorage.setItem('carrito', JSON.stringify(productos));
-        actualizarCarrito();
-    }
-    function decrementar(id) {
-        let productos=localStorage.getItem('carrito') ? JSON.parse(localStorage.getItem('carrito')) : [];
-        const productoExistente = productos.find(p => p.id == id);
-        if(productoExistente) {
-            const index = productos.findIndex(p => p.id == id);
-            if(productos[index].cantidad > 1) {
-                productos[index].cantidad -= 1;
-            } else {
-                productos=productos.filter(p => p.id != id);
-            }
-        }
-        localStorage.setItem('carrito', JSON.stringify(productos));
-        actualizarCarrito();
-    }
-    function eliminarProducto(id) {
-        let productos=localStorage.getItem('carrito') ? JSON.parse(localStorage.getItem('carrito')) : [];
-        productos = productos.filter(p => p.id != id);
-        localStorage.setItem('carrito', JSON.stringify(productos));
-        actualizarCarrito();
-    }
-    document.addEventListener("DOMContentLoaded", function() {
-    const carritoContenido = document.getElementById("carrito-contenido");
-
-    
-    carritoContenido.addEventListener("click", function(event) {
-        event.stopPropagation();
-    });
-});
-
-  
-</script>
 <!-- ==================== CONTENIDO ==================== -->
 <main class="flex-grow-1 container my-4">  <!-- 👈 clave: empuja el footer -->
     {% block content %}
@@ -209,6 +85,8 @@
 
 <!-- Bootstrap JS -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="{% static 'js/carrito.js' %}"></script>
+{% block scripts %}{% endblock %}
 
 </body>
 </html>
