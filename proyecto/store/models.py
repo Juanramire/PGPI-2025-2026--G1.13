@@ -22,7 +22,6 @@ class Producto(models.Model):
     precio = models.DecimalField(max_digits=10, decimal_places=2)
     precio_oferta = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     genero=models.CharField(max_length=50)
-    color=models.CharField(max_length=50)
     material=models.CharField(max_length=100)
     es_destacado=models.BooleanField(default=False)
     fecha_creacion=models.DateTimeField(auto_now_add=True)
@@ -37,17 +36,38 @@ class Producto(models.Model):
     @property
     def esta_disponible(self):
         """Un producto está disponible si tiene al menos una talla con stock."""
-        if not self.tallas.exists():
+        if not self.variantes.exists():
             return False
-        return self.tallas.filter(stock__gt=0).exists()
+        return self.variantes.filter(stock__gt=0).exists()
+
+    @property
+    def colores_disponibles(self):
+        """Devuelve una lista única de colores disponibles con stock."""
+        return self.variantes.filter(stock__gt=0).values_list('color', flat=True).distinct()
 
     
-class TallaProducto(models.Model):
+class VarianteProducto(models.Model):
+    COLOR_CHOICES = [
+        ('Rojo', 'Rojo'),
+        ('Azul', 'Azul'),
+        ('Verde', 'Verde'),
+        ('Negro', 'Negro'),
+        ('Blanco', 'Blanco'),
+        ('Amarillo', 'Amarillo'),
+        ('Rosa', 'Rosa'),
+        ('Morado', 'Morado'),
+        ('Gris', 'Gris'),
+        ('Verde Oliva', 'Verde Oliva'),
+        ('Azul Marino', 'Azul Marino'),
+        ('Beige', 'Beige'),
+        ('Marrón', 'Marrón'),
+    ]
+    color = models.CharField(max_length=20, choices=COLOR_CHOICES, default="Negro")
     talla = models.CharField(max_length=30)
     stock = models.PositiveIntegerField()
-    producto = models.ForeignKey(Producto, on_delete=models.CASCADE, related_name='tallas')
+    producto = models.ForeignKey(Producto, on_delete=models.CASCADE, related_name='variantes')
     def __str__(self):
-        return self.talla
+        return f'{self.producto.nombre} - {self.color} - {self.talla}'
 
 class Cliente(AbstractUser):
     # Hereda todos los campos de User (username, email, password, etc.)
