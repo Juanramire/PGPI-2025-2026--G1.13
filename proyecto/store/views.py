@@ -76,12 +76,24 @@ def detalle_producto(request, id):
     ahorro = None
     if producto.precio_oferta:
         ahorro = producto.precio - producto.precio_oferta
-
+    COLOR_CHOICES = [
+    ('Rojo', 'Rojo'),
+    ('Azul', 'Azul'),
+    ('Verde', 'Verde'),
+    ('Negro', 'Negro'),
+    ('Blanco', 'Blanco'),
+    ('Amarillo', 'Amarillo'),
+    ('Rosa', 'Rosa'),
+    ('Morado', 'Morado'),
+    ('Gris', 'Gris'),
+    ]
     contexto = {
         'producto': producto,
         'categorias_navbar': categorias,
-        'ahorro': ahorro
+        'ahorro': ahorro,
+        'COLOR_CHOICES':COLOR_CHOICES
     }
+
     return render(request, 'detalle_producto.html', contexto)
 def confirmar_pedido(request):
     return render(request,'confirmar_pedido.html',{})
