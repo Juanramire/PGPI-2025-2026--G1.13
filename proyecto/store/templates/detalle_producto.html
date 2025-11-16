@@ -55,7 +55,6 @@
                         <h5>Características</h5>
                         <ul class="list-unstyled">
                             <li><strong>Género:</strong> {{ producto.genero }}</li>
-                            <li><strong>Color:</strong> {{ producto.color }}</li>
                             <li><strong>Material:</strong> {{ producto.material }}</li>
                         </ul>
                     </div>
@@ -80,29 +79,22 @@
 
                         {% if producto.esta_disponible %}
                         
-                            <!-- Talla -->
-                            <div>
-                                <label class="form-label"><strong>Selecciona una talla:</strong></label>
-                                <select class="form-select" id="talla-select">
-                                    <option selected disabled>Elige...</option>
-                                    {% for talla in producto.tallas.all %}
-                                        {% if talla.stock > 0 %}
-                                            <option value="{{ talla.talla }}">{{ talla.talla }} ({{ talla.stock }} disponibles)</option>
-                                        {% else %}
-                                            <option value="{{ talla.talla }}" disabled>{{ talla.talla }} (Sin stock)</option>
-                                        {% endif %}
-                                    {% endfor %}
-                                </select>
-                            </div>
-
                             <!-- Color -->
                             <div>
                                 <label class="form-label"><strong>Selecciona un color:</strong></label>
                                 <select class="form-select" id="color-select">
                                     <option selected disabled>Elige...</option>
-                                    {% for key, value in COLOR_CHOICES %}
-                                        <option value="{{ key }}">{{ value }}</option>
+                                    {% for color in colores_disponibles %}
+                                        <option value="{{ color }}">{{ color }}</option>
                                     {% endfor %}
+                                </select>
+                            </div>
+
+                            <!-- Talla (se llenará con JS) -->
+                            <div>
+                                <label class="form-label"><strong>Selecciona una talla:</strong></label>
+                                <select class="form-select" id="talla-select" disabled>
+                                    <option selected disabled>Primero elige un color</option>
                                 </select>
                             </div>
 
@@ -147,8 +139,10 @@
 
 
 {% block scripts %}
+{{ variantes_json|json_script:"variantes-data" }}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    const variantes = JSON.parse(document.getElementById('variantes-data').textContent);
     const tallaSelect = document.getElementById('talla-select');
     const colorSelect = document.getElementById('color-select');
     const textoInput = document.getElementById('texto-input');
@@ -156,11 +150,36 @@ document.addEventListener('DOMContentLoaded', function() {
     const btnAnadir = document.getElementById('btn-anadir-carrito');
 
     function validarFormulario() {
-        btnAnadir.disabled = !(tallaSelect.value && colorSelect.value);
+        // El botón se activa si se ha seleccionado una opción válida en ambos desplegables
+        const colorValido = colorSelect.value && colorSelect.selectedIndex > 0;
+        const tallaValida = tallaSelect.value && tallaSelect.selectedIndex > 0;
+        btnAnadir.disabled = !(colorValido && tallaValida);
     }
 
-    tallaSelect.addEventListener('change', validarFormulario);
-    colorSelect.addEventListener('change', validarFormulario);
+    colorSelect.addEventListener('change', function() {
+        const colorSeleccionado = this.value;
+        
+        // Limpiar y preparar el selector de tallas
+        tallaSelect.innerHTML = '<option selected disabled>Elige...</option>';
+        tallaSelect.disabled = true;
+
+        // Filtrar las variantes que coinciden con el color seleccionado y tienen stock
+        const tallasDisponibles = variantes.filter(v => v.color === colorSeleccionado && v.stock > 0);
+
+        if (tallasDisponibles.length > 0) {
+            tallasDisponibles.forEach(variante => {
+                const option = document.createElement('option');
+                option.value = variante.talla;
+                option.textContent = `${variante.talla} (${variante.stock} disponibles)`;
+                tallaSelect.appendChild(option);
+            });
+            tallaSelect.disabled = false; // Habilitar el selector de tallas
+        } else {
+            tallaSelect.innerHTML = '<option selected disabled>No hay tallas para este color</option>';
+        }
+        validarFormulario(); // Comprobar si el botón "Añadir" debe activarse
+    });
+    tallaSelect.addEventListener('change', validarFormulario); // Validar también al cambiar la talla
 
     btnAnadir.addEventListener('click', function() {
 
@@ -179,5 +198,7 @@ document.addEventListener('DOMContentLoaded', function() {
         añadirCarrito(producto);
     });
 });
+
 </script>
+
 {% endblock %}

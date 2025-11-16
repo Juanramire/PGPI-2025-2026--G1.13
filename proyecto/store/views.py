@@ -78,65 +78,19 @@ def detalle_producto(request, id):
     ahorro = None
     if producto.precio_oferta:
         ahorro = producto.precio - producto.precio_oferta
-    COLOR_CHOICES = [
-    ('Rojo', 'Rojo'),
-    ('Azul', 'Azul'),
-    ('Verde', 'Verde'),
-    ('Negro', 'Negro'),
-    ('Blanco', 'Blanco'),
-    ('Amarillo', 'Amarillo'),
-    ('Rosa', 'Rosa'),
-    ('Morado', 'Morado'),
-    ('Gris', 'Gris'),
-    ]
+    
+    variantes_json = list(producto.variantes.values('color', 'talla', 'stock'))
+    
     contexto = {
         'producto': producto,
         'categorias_navbar': categorias,
         'ahorro': ahorro,
-        'COLOR_CHOICES':COLOR_CHOICES
+        'colores_disponibles': producto.colores_disponibles,
+        'variantes_json': variantes_json, # Pasamos las variantes al contexto
     }
 
     return render(request, 'detalle_producto.html', contexto)
+
 def confirmar_pedido(request):
     return render(request,'confirmar_pedido.html',{})
-
-
-@login_required
-def gestionar_stock(request):
-    if not request.user.is_staff:
-        raise PermissionDenied("Necesitas permisos administrativos para acceder a esta sección.")
-
-    categorias = Categoria.objects.all()
-    tallas = TallaProducto.objects.select_related('producto', 'producto__marca', 'producto__categoria').order_by('producto__nombre', 'talla')
-
-    if request.method == 'POST':
-        talla_id = request.POST.get('talla_id')
-        nuevo_stock = request.POST.get('stock')
-
-        if talla_id and nuevo_stock is not None:
-            try:
-                talla_obj = TallaProducto.objects.get(pk=talla_id)
-            except TallaProducto.DoesNotExist:
-                messages.error(request, "La talla seleccionada no existe.")
-            else:
-                try:
-                    nuevo_valor = int(nuevo_stock)
-                    if nuevo_valor < 0:
-                        raise ValueError
-                    talla_obj.stock = nuevo_valor
-                    talla_obj.save()
-                    messages.success(
-                        request,
-                        f"Stock actualizado a {nuevo_valor} para {talla_obj.producto.nombre} ({talla_obj.talla})."
-                    )
-                    return redirect('gestionar_stock')
-                except ValueError:
-                    messages.error(request, "Introduce un número entero válido igual o mayor que cero.")
-        else:
-            messages.warning(request, "Selecciona una talla y una cantidad para actualizar.")
-
-    contexto = {
-        'tallas': tallas,
-        'categorias_navbar': categorias,
-    }
-    return render(request, 'admin_stock.html', contexto)
+    
