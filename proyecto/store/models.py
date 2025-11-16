@@ -112,6 +112,21 @@ class ItemPedido(models.Model):
     cantidad = models.PositiveIntegerField()
     precio_unitario = models.DecimalField(max_digits=10, decimal_places=2) # Precio del producto en el momento de la compra
     total = models.DecimalField(max_digits=10, decimal_places=2) # cantidad * precio_unitario
+    texto=models.CharField(max_length=50,default="")
+    imagen=models.ImageField(upload_to='pedidos/', blank=True, null=True)
+    COLOR_CHOICES = [
+    ('Rojo', 'Rojo'),
+    ('Azul', 'Azul'),
+    ('Verde', 'Verde'),
+    ('Negro', 'Negro'),
+    ('Blanco', 'Blanco'),
+    ('Amarillo', 'Amarillo'),
+    ('Rosa', 'Rosa'),
+    ('Morado', 'Morado'),
+    ('Gris', 'Gris'),
+]
+
+    color = models.CharField(max_length=20, choices=COLOR_CHOICES,default="Negro")
 
     def __str__(self):
         return f"{self.cantidad} x {self.producto.nombre} en Pedido {self.pedido.numero_pedido}"

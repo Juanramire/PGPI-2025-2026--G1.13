@@ -83,4 +83,5 @@ def detalle_producto(request, id):
         'ahorro': ahorro
     }
     return render(request, 'detalle_producto.html', contexto)
-
+def confirmar_pedido(request):
+    return render(request,'confirmar_pedido.html',{})

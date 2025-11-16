@@ -7,7 +7,9 @@
     <nav aria-label="breadcrumb">
         <ol class="breadcrumb">
             <li class="breadcrumb-item"><a href="/">Inicio</a></li>
-            <li class="breadcrumb-item"><a href="/?categoria={{ producto.categoria.id }}">{{ producto.categoria.nombre }}</a></li>
+            <li class="breadcrumb-item">
+                <a href="/?categoria={{ producto.categoria.id }}">{{ producto.categoria.nombre }}</a>
+            </li>
             <li class="breadcrumb-item active" aria-current="page">{{ producto.nombre }}</li>
         </ol>
     </nav>
@@ -31,23 +33,23 @@
             <div class="card shadow-sm h-100">
                 <div class="card-body">
                     <h1 class="card-title mb-3">{{ producto.nombre }}</h1>
-                    
+
                     <!-- Marca -->
                     <p class="text-muted mb-2">
                         <strong>Marca:</strong> {{ producto.marca.nombre }}
                     </p>
-                    
+
                     <!-- Categoría -->
                     <p class="text-muted mb-3">
                         <strong>Categoría:</strong> {{ producto.categoria.nombre }}
                     </p>
-                    
+
                     <!-- Descripción -->
                     <div class="mb-4">
                         <h5>Descripción</h5>
                         <p class="text-secondary">{{ producto.descripcion }}</p>
                     </div>
-                    
+
                     <!-- Características -->
                     <div class="mb-4">
                         <h5>Características</h5>
@@ -57,7 +59,7 @@
                             <li><strong>Material:</strong> {{ producto.material }}</li>
                         </ul>
                     </div>
-                    
+
                     <!-- Precio -->
                     <div class="mb-4">
                         {% if producto.precio_oferta %}
@@ -72,14 +74,17 @@
                             <p class="fw-bold fs-2 mb-0">{{ producto.precio }} €</p>
                         {% endif %}
                     </div>
-                    
-                    <!-- Formulario de Talla y Acción -->
-                    <div class="d-grid gap-2" id="form-compra">
+
+                    <!-- Formulario Completo -->
+                    <div class="d-grid gap-3" id="form-compra">
+
                         {% if producto.esta_disponible %}
-                            <div class="mb-3">
-                                <label for="talla-select" class="form-label"><strong>Selecciona una talla:</strong></label>
+                        
+                            <!-- Talla -->
+                            <div>
+                                <label class="form-label"><strong>Selecciona una talla:</strong></label>
                                 <select class="form-select" id="talla-select">
-                                    <option value="" selected disabled>Elige...</option>
+                                    <option selected disabled>Elige...</option>
                                     {% for talla in producto.tallas.all %}
                                         {% if talla.stock > 0 %}
                                             <option value="{{ talla.talla }}">{{ talla.talla }} ({{ talla.stock }} disponibles)</option>
@@ -89,19 +94,46 @@
                                     {% endfor %}
                                 </select>
                             </div>
-                            <button id="btn-anadir-carrito" 
-                                    class="btn btn-warning btn-lg" 
+
+                            <!-- Color -->
+                            <div>
+                                <label class="form-label"><strong>Selecciona un color:</strong></label>
+                                <select class="form-select" id="color-select">
+                                    <option selected disabled>Elige...</option>
+                                    {% for key, value in COLOR_CHOICES %}
+                                        <option value="{{ key }}">{{ value }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <!-- Texto personalizado -->
+                            <div>
+                                <label class="form-label"><strong>Texto personalizado:</strong></label>
+                                <input type="text" class="form-control" id="texto-input" maxlength="50" placeholder="Escribe un nombre o frase">
+                            </div>
+
+                            <!-- Imagen personalizada -->
+                            <div>
+                                <label class="form-label"><strong>Subir imagen personalizada:</strong></label>
+                                <input type="file" class="form-control" id="imagen-input" accept="image/*">
+                            </div>
+
+                            <!-- Botón -->
+                            <button id="btn-anadir-carrito"
+                                    class="btn btn-warning btn-lg"
                                     data-producto-id="{{ producto.id }}"
                                     data-producto-nombre="{{ producto.nombre|escapejs }}"
                                     data-producto-precio="{% if producto.precio_oferta %}{{ producto.precio_oferta }}{% else %}{{ producto.precio }}{% endif %}"
                                     disabled>
                                 🛒 Añadir al carrito
                             </button>
+
                         {% else %}
                             <button class="btn btn-secondary btn-lg" disabled>
                                 Producto no disponible
                             </button>
                         {% endif %}
+
                         <a href="/" class="btn btn-outline-secondary">← Volver al catálogo</a>
                     </div>
 
@@ -109,43 +141,43 @@
             </div>
         </div>
     </div>
-    
-    <!-- Tallas disponibles (si existen) -->
-    {% if producto.tallas.exists %}
-        <!-- Este bloque ya no es necesario, la información se muestra en el selector -->
-    {% endif %}
+
 </div>
 {% endblock %}
 
+
 {% block scripts %}
-    <script>
-            document.addEventListener('DOMContentLoaded', function() {
-            const tallaSelect = document.getElementById('talla-select');
-            const btnAnadir = document.getElementById('btn-anadir-carrito');
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const tallaSelect = document.getElementById('talla-select');
+    const colorSelect = document.getElementById('color-select');
+    const textoInput = document.getElementById('texto-input');
+    const imagenInput = document.getElementById('imagen-input');
+    const btnAnadir = document.getElementById('btn-anadir-carrito');
 
-            // Si existe el selector de tallas, añade el listener
-            if (tallaSelect) {
-                tallaSelect.addEventListener('change', function() {
-                    // Habilita el botón "Añadir al carrito" solo si se ha seleccionado una talla válida
-                    btnAnadir.disabled = !this.value;
-                });
-            }
+    function validarFormulario() {
+        btnAnadir.disabled = !(tallaSelect.value && colorSelect.value);
+    }
 
-            // Si existe el botón de añadir, añade el listener para el clic
-            if (btnAnadir) {
-                btnAnadir.addEventListener('click', function() {
-                    const tallaSeleccionada = tallaSelect.value;
-                    
-                    // Construye el objeto del producto leyendo los atributos data-* del botón
-                    const producto = {
-                        id: this.dataset.productoId,
-                        nombre: this.dataset.productoNombre,
-                        precio: this.dataset.productoPrecio,
-                        talla: tallaSeleccionada
-                    };
-                    añadirCarrito(producto);
-                });
-            }
-        });
-    </script>
+    tallaSelect.addEventListener('change', validarFormulario);
+    colorSelect.addEventListener('change', validarFormulario);
+
+    btnAnadir.addEventListener('click', function() {
+
+        const producto = {
+            id: this.dataset.productoId,
+            nombre: this.dataset.productoNombre,
+            precio: this.dataset.productoPrecio,
+            talla: tallaSelect.value,
+            color: colorSelect.value,
+            texto: textoInput.value || "",
+            imagen: imagenInput.files.length > 0 
+                ? imagenInput.files[0].name 
+                : null
+        };
+
+        añadirCarrito(producto);
+    });
+});
+</script>
 {% endblock %}

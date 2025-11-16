@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Confirmación de pedido - MiTienda{% endblock %}
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+{% block content %}
+<style>
+    .producto-item {
+        padding: 10px;
+        border-bottom: 1px solid #ddd;
+    }
+    .producto-item:last-child {
+        border-bottom: none;
+    }
+    .mini-info small {
+        display:block;
+        line-height: 1.2;
+    }
+</style>
+
+<div class="container py-4">
+
+    <h2 class="mb-4">Confirmación de Pedido</h2>
+
+    <!-- LISTADO DEL CARRITO -->
+    <div class="card mb-4">
+        <div class="card-header fw-bold">
+            Productos del Pedido
+        </div>
+        <div class="card-body" id="lista-productos">
+            Cargando productos...
+        </div>
+    </div>
+
+    <!-- FORMULARIO DEL PEDIDO -->
+    <div class="card">
+        <div class="card-header fw-bold">
+            Datos del Pedido
+        </div>
+        <div class="card-body">
+
+            <form id="form-pedido" >
+                
+                <div class="mb-3">
+                    <label class="form-label">Dirección de Envío</label>
+                    <input type="text" class="form-control" id="direccion_envio" required>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Teléfono</label>
+                    <input type="text" class="form-control" id="telefono" required>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Método de Pago</label>
+                    <select class="form-select" id="metodo_pago" required>
+                        <option value="">Seleccione...</option>
+                        <option value="Tarjeta">Tarjeta de Crédito/Débito</option>
+                        <option value="PayPal">PayPal</option>
+                        <option value="Transferencia">Transferencia Bancaria</option>
+                        <option value="Efectivo">Efectivo (Contra Entrega)</option>
+                    </select>
+                </div>
+
+                <button class="btn btn-primary w-100 mt-3" type="submit">Confirmar Pedido</button>
+            
+            </form>
+
+        </div>
+    </div>
+    <script>
+        // ----------------- HELPERS -----------------
+        
+
+        
+        // ----------------- PINTAR LISTA -----------------
+        
+        
+        // ----------------- CONTROLES -----------------
+        document.addEventListener('click', (e) => {
+    if (e.target.matches('.btn-sumar-pedido')) {
+        const index = e.target.dataset.index;
+        const productos = obtenerCarrito();
+        incrementar(productos[index]);
+    }
+
+    if (e.target.matches('.btn-restar-pedido')) {
+        const index = e.target.dataset.index;
+        const productos = obtenerCarrito();
+        decrementar(productos[index]);
+    }
+
+    if (e.target.matches('.btn-eliminar-pedido')) {
+        const index = e.target.dataset.index;
+        const productos = obtenerCarrito();
+        eliminarProducto(productos[index]);
+
+    }
+});
+        
+        // ----------------- CARGAR AL ABRIR -----------------
+        window.onload = () => {
+            renderCarrito();
+            
+        };
+        
+        // ----------------- ENVIAR PEDIDO -----------------
+        document.getElementById("form-pedido").addEventListener("submit", (e) => {
+            e.preventDefault();
+        
+            const pedido = {
+                direccion_envio: document.getElementById("direccion_envio").value,
+                telefono: document.getElementById("telefono").value,
+                metodo_pago: document.getElementById("metodo_pago").value,
+                productos: obtenerCarrito()
+            };
+        
+            console.log("Pedido listo para enviar al backend:", pedido);
+        
+            alert("Pedido enviado correctamente.");
+            fetch("/api/pedidos",{
+                method:"POST",
+                body:JSON.stringify(pedido)
+            })
+            // Aquí podrías hacer fetch() al backend Django
+            // fetch("/api/pedidos/", { method: "POST", body: JSON.stringify(pedido), ... })
+        
+        });
+        </script>
+        
+</div>
+<script src="{% static 'js/carrito.js' %}"></script>
+{% endblock %}
+
