@@ -145,7 +145,7 @@ function actualizarVistaCarrito() {
         carritoContenido.innerHTML += `
             <hr>
             <div class='text-end fw-bold mb-2'>Total: ${totalSuma.toFixed(2)} €</div>
-            <a class="btn btn-primary w-100" href="/pedido">Continuar compra</button>
+            <a class="btn btn-primary w-100" href="/pedidos">Continuar compra</button>
         `;
     }
 
