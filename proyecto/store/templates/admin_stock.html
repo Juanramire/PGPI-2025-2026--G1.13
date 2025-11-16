@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}Administrar stock{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-start gap-3 mb-4">
+        <div>
+            <h1 class="h4 mb-1">Panel de stock</h1>
+            <p class="text-muted mb-0">Actualiza el inventario de cada talla para que el catálogo siempre muestre disponibilidad real.</p>
+        </div>
+        <a class="btn btn-outline-secondary btn-sm" href="{% url 'productos' %}">Volver al catálogo</a>
+    </div>
+
+    <p class="text-secondary small mb-3">
+        Solo los usuarios con permisos de personal pueden acceder a esta sección. Introduce un número entero mayor o igual a cero y guarda los cambios para cada talla.
+    </p>
+
+    {% if messages %}
+        <div class="mb-3">
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }} mb-2">{{ message }}</div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <div class="table-responsive">
+        <table class="table table-striped table-hover align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th>Producto</th>
+                    <th>Talla</th>
+                    <th class="text-center">Stock</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for talla in tallas %}
+                    <tr>
+                        <td>
+                            <div class="fw-semibold">{{ talla.producto.nombre }}</div>
+                            <small class="text-muted">{{ talla.producto.marca.nombre }} · {{ talla.producto.categoria.nombre }}</small>
+                        </td>
+                        <td>{{ talla.talla }}</td>
+                        <td>
+                            <form method="post" class="d-flex flex-wrap gap-2 align-items-center mb-0">
+                                {% csrf_token %}
+                                <input type="hidden" name="talla_id" value="{{ talla.id }}">
+                                <div class="input-group input-group-sm" style="max-width: 220px;">
+                                    <span class="input-group-text">Cantidad</span>
+                                    <input type="number" min="0" name="stock" value="{{ talla.stock }}" class="form-control" required>
+                                </div>
+                                <button type="submit" class="btn btn-sm btn-primary">Guardar</button>
+                            </form>
+                        </td>
+                    </tr>
+                {% empty %}
+                    <tr>
+                        <td colspan="3" class="text-center text-muted">No hay tallas registradas en el sistema.</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
