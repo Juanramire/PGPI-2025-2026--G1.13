@@ -1,21 +1,12 @@
 {% extends "base.html" %}
 {% load static %}
 {% block title %}Confirmación de pedido - MiTienda{% endblock %}
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'css/pedido.css' %}">
+{% endblock %}
+
 {% block content %}
-<style>
-    .producto-item {
-        padding: 10px;
-        border-bottom: 1px solid #ddd;
-    }
-    .producto-item:last-child {
-        border-bottom: none;
-    }
-    .mini-info small {
-        display:block;
-        line-height: 1.2;
-    }
-</style>
 
 <div class="container py-4">
 
@@ -69,12 +60,57 @@
     </div>
     <script>
         // ----------------- HELPERS -----------------
-        
+        const obtenerCarrito = () => JSON.parse(localStorage.getItem('carrito')) || [];
+        const guardarCarrito = (carrito) => localStorage.setItem('carrito', JSON.stringify(carrito));
+        const vaciarCarrito = () => localStorage.removeItem('carrito');
 
-        
         // ----------------- PINTAR LISTA -----------------
-        
-        
+        const renderCarrito = () => {
+            const productos = obtenerCarrito();
+            const lista = document.getElementById('lista-productos');
+            
+            if (productos.length === 0) {
+                lista.innerHTML = '<p class="text-muted text-center">No hay productos en tu pedido.</p>';
+                return;
+            }
+
+            let total = 0;
+            lista.innerHTML = productos.map((p, index) => {
+                const subtotal = p.precio * p.cantidad;
+                total += subtotal;
+                return `
+                    <div class="producto-item d-flex justify-content-between align-items-center">
+                        <div class="mini-info">
+                            <strong>${p.nombre}</strong>
+                            <small>Color: ${p.color}, Talla: ${p.talla}</small>
+                            <small>${p.cantidad} x ${p.precio} €</small>
+                        </div>
+                        <div>
+                            <strong class="me-3">${subtotal.toFixed(2)} €</strong>
+                            <button class="btn btn-sm btn-outline-danger btn-eliminar-pedido" data-index="${index}">×</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            lista.innerHTML += `
+                <div class="producto-item d-flex justify-content-between align-items-center fw-bold fs-5">
+                    <span>Total</span>
+                    <span>${total.toFixed(2)} €</span>
+                </div>
+            `;
+        };
+
+        // ----------------- FUNCIONES DE MANIPULACIÓN -----------------
+        const eliminarProducto = (producto) => {
+            let carrito = obtenerCarrito();
+            // Usamos un identificador único para cada variante en el carrito
+            const idUnico = producto.id + '-' + producto.color + '-' + producto.talla;
+            carrito = carrito.filter(p => (p.id + '-' + p.color + '-' + p.talla) !== idUnico);
+            guardarCarrito(carrito);
+            renderCarrito(); // Volver a pintar la lista
+        };
+
         // ----------------- CONTROLES -----------------
         document.addEventListener('click', (e) => {
     if (e.target.matches('.btn-sumar-pedido')) {
@@ -105,29 +141,41 @@
         
         // ----------------- ENVIAR PEDIDO -----------------
         document.getElementById("form-pedido").addEventListener("submit", (e) => {
-            e.preventDefault();
+            e.preventDefault(); // Evitamos que el formulario se envíe de la forma tradicional
         
             const pedido = {
                 direccion_envio: document.getElementById("direccion_envio").value,
                 telefono: document.getElementById("telefono").value,
                 metodo_pago: document.getElementById("metodo_pago").value,
-                productos: obtenerCarrito()
+                productos: obtenerCarrito() // Obtenemos los productos del localStorage
             };
         
-            console.log("Pedido listo para enviar al backend:", pedido);
-        
-            alert("Pedido enviado correctamente.");
-            fetch("/api/pedidos",{
-                method:"POST",
-                body:JSON.stringify(pedido)
+            // Enviamos los datos al backend
+            fetch("{% url 'confirmar_pedido' %}", {
+                method: "POST",
+                headers: {
+                    'Content-Type': 'application/json',
+                    // Si no usas @csrf_exempt, necesitarías enviar el token CSRF aquí
+                },
+                body: JSON.stringify(pedido)
             })
-            // Aquí podrías hacer fetch() al backend Django
-            // fetch("/api/pedidos/", { method: "POST", body: JSON.stringify(pedido), ... })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    alert("Error al crear el pedido: " + data.error);
+                } else {
+                    alert("¡Pedido realizado con éxito! ID del pedido: " + data.pedido_id);
+                    vaciarCarrito(); // Limpiamos el carrito del localStorage
+                    window.location.href = "/"; // Redirigimos al inicio
+                }
+            })
+            .catch(error => {
+                console.error("Error en la petición:", error);
+                alert("Ha ocurrido un error inesperado. Por favor, inténtalo de nuevo.");
+            });
         
         });
         </script>
         
 </div>
-<script src="{% static 'js/carrito.js' %}"></script>
 {% endblock %}
-

@@ -27,7 +27,7 @@ urlpatterns = [
     path('login/', views.login_view, name='login'),
     path('logout/', views.logout_view, name='logout'),
     path('register/', views.registro_view, name='registro'),
-    path('pedidos',views.confirmar_pedido)
+    path('pedidos/', views.confirmar_pedido, name='confirmar_pedido'),
 ]
 
 # Servir archivos media en desarrollo

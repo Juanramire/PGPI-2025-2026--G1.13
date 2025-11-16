@@ -1,0 +1,11 @@
+.producto-item {
+    padding: 10px;
+    border-bottom: 1px solid #ddd;
+}
+.producto-item:last-child {
+    border-bottom: none;
+}
+.mini-info small {
+    display:block;
+    line-height: 1.2;
+}
