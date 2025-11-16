@@ -21,8 +21,8 @@ from django.conf.urls.static import static
 from store import views
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
     path('admin/stock/', views.gestionar_stock, name='gestionar_stock'),
+    path('admin/', admin.site.urls),
     path('', views.productos, name='productos'),
     path('producto/<int:id>/', views.detalle_producto, name='detalle_producto'),
     path('login/', views.login_view, name='login'),

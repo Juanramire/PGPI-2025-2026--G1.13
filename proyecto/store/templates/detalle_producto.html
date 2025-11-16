@@ -167,12 +167,12 @@ document.addEventListener('DOMContentLoaded', function() {
         const tallasDisponibles = variantes.filter(v => v.color === colorSeleccionado && v.stock > 0);
 
         if (tallasDisponibles.length > 0) {
-            tallasDisponibles.forEach(variante => {
-                const option = document.createElement('option');
-                option.value = variante.talla;
-                option.textContent = `${variante.talla} (${variante.stock} disponibles)`;
-                tallaSelect.appendChild(option);
-            });
+        tallasDisponibles.forEach(variante => {
+            const option = document.createElement('option');
+            option.value = variante.talla;
+            option.textContent = variante.talla;
+            tallaSelect.appendChild(option);
+        });
             tallaSelect.disabled = false; // Habilitar el selector de tallas
         } else {
             tallaSelect.innerHTML = '<option selected disabled>No hay tallas para este color</option>';
