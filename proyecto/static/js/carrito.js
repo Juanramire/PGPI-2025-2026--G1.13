@@ -9,7 +9,6 @@
  */
 function añadirCarrito(producto) {
     const productos = obtenerCarrito();
-
     const productoExistente = productos.find(
         p => p.id === producto.id &&
              p.talla === producto.talla &&
@@ -17,11 +16,25 @@ function añadirCarrito(producto) {
              p.texto === producto.texto
     );
 
+    // Normalizar precios a números (aceptamos coma como separador)
+    const precioNumericoRaw = producto.precio !== undefined ? parseFloat(String(producto.precio).toString().replace(",", ".")) : 0;
+    const precioOfertaNumericoRaw = producto.precio_oferta !== undefined && producto.precio_oferta !== null && producto.precio_oferta !== ''
+        ? parseFloat(String(producto.precio_oferta).toString().replace(",", "."))
+        : null;
+
+    // Redondear a 2 decimales y almacenar como Number (no string)
+    const precioNumerico = Number((isNaN(precioNumericoRaw) ? 0 : precioNumericoRaw).toFixed(2));
+    const precioOfertaNumerico = precioOfertaNumericoRaw !== null && !isNaN(precioOfertaNumericoRaw)
+        ? Number(precioOfertaNumericoRaw.toFixed(2))
+        : null;
+
     if (productoExistente) {
         productoExistente.cantidad += 1;
+        // Asegurar que el precio y precio_oferta estén guardados como números con 2 decimales
+        productoExistente.precio = Number((Number(productoExistente.precio) || 0).toFixed(2));
+        if (precioOfertaNumerico !== null) productoExistente.precio_oferta = Number(precioOfertaNumerico.toFixed(2));
     } else {
-        const precioNumerico = parseFloat(String(producto.precio).replace(",", "."));
-        productos.push({ ...producto, precio: precioNumerico, cantidad: 1 });
+        productos.push({ ...producto, precio: precioNumerico, precio_oferta: precioOfertaNumerico, cantidad: 1 });
     }
 
     guardarCarrito(productos);
@@ -106,11 +119,24 @@ function actualizarVistaCarrito() {
     if (productos.length === 0) {
         carritoContenido.innerHTML = '<p class="text-center text-muted m-0">El carrito está vacío.</p>';
     } else {
+        let subtotalOriginal = 0;
+        let subtotalWithOffer = 0;
+        let descuentoGlobal = 0;
         productos.forEach((producto, index) => {
-            const subtotal = producto.precio * producto.cantidad;
+            const precioOriginal = Number(producto.precio);
+            const precioUnit = producto.precio_oferta ? Number(producto.precio_oferta) : precioOriginal;
+            const cantidad = Number(producto.cantidad || 1);
+            const subtotal = precioUnit * cantidad;
             totalSuma += subtotal;
+            subtotalWithOffer += subtotal;
+            subtotalOriginal += precioOriginal * cantidad;
+            let ahorroItem = 0;
+            if (producto.precio_oferta) {
+                ahorroItem = (precioOriginal - Number(producto.precio_oferta)) * cantidad;
+                descuentoGlobal += ahorroItem;
+            }
 
-            
+            const precioShow = producto.precio_oferta ? `<span class="text-danger">${Number(producto.precio_oferta).toFixed(2)} €</span> <small class="text-muted text-decoration-line-through">${precioOriginal.toFixed(2)} €</small>` : `${precioOriginal.toFixed(2)} €`;
 
             const itemHTML = `
             <div class="producto-item d-flex align-items-center gap-2" data-index="${index}">
@@ -120,12 +146,14 @@ function actualizarVistaCarrito() {
         
                     <small>Talla: ${producto.talla}</small><br>
                     <small>Color: ${producto.color}</small><br>
-        
+                    ${producto.imagen ? `   
                     <small>Imagen: ${producto.imagen}</small><br>
-        
+                    ` : ""}
                     ${producto.texto ? `<small>Texto: "${producto.texto}"</small><br>` : ""}
         
                     <small class="fw-bold">${subtotal.toFixed(2)} €</small>
+                    ${ahorroItem > 0 ? `<div class="small text-success"> Ahorro: ${ahorroItem.toFixed(2)} €</div>` : ''}
+                    <div class="small text-muted"> Precio unidad: ${precioShow}</div>
                 </div>
         
                 <div class="producto-controles text-end">
@@ -142,10 +170,19 @@ function actualizarVistaCarrito() {
             carritoContenido.innerHTML += itemHTML;
         });
 
+        // Coste inventado del pedido (envío)
+        const costeEnvio = subtotalWithOffer >= 50 ? 0 : 4.99;
+        const totalFinal = subtotalWithOffer + costeEnvio;
+
         carritoContenido.innerHTML += `
             <hr>
-            <div class='text-end fw-bold mb-2'>Total: ${totalSuma.toFixed(2)} €</div>
-            <a class="btn btn-primary w-100" href="/pedidos">Continuar compra</button>
+            <div class='text-end'>
+                <div>Subtotal (original): ${subtotalOriginal.toFixed(2)} €</div>
+                <div>Descuento: ${descuentoGlobal.toFixed(2)} €</div>
+                <div>Coste pedido: ${costeEnvio.toFixed(2)} €</div>
+                <div class='fw-bold fs-5'>Total: ${totalFinal.toFixed(2)} €</div>
+            </div>
+            <a class="btn btn-primary w-100 mt-2" href="/pedidos">Continuar compra</a>
         `;
     }
 
@@ -192,8 +229,15 @@ function renderCarrito(){
     }
 
     productos.forEach((producto, index) => {
-        const subtotal = producto.precio * producto.cantidad;
+        const precioUnit = producto.precio_oferta ? Number(producto.precio_oferta) : Number(producto.precio);
+        const cantidad = Number(producto.cantidad || 1);
+        const subtotal = precioUnit * cantidad;
         total += subtotal;
+
+        let ahorroItem = 0;
+        if (producto.precio_oferta) {
+            ahorroItem = (Number(producto.precio) - Number(producto.precio_oferta)) * cantidad;
+        }
 
         lista.innerHTML += `
             <div class="producto-item d-flex justify-content-between align-items-center" data-index="${index}">
@@ -205,6 +249,8 @@ function renderCarrito(){
                     ${producto.imagen ? `<small>Imagen: ${producto.imagen}</small>` : ""}
                     ${producto.texto ? `<small>Texto: "${producto.texto}"</small>` : ""}
                     <small class="fw-bold">${subtotal.toFixed(2)} €</small>
+                    ${ahorroItem > 0 ? `<div class="small text-success">Ahorro: ${ahorroItem.toFixed(2)} €</div>` : ''}
+                    <div class="small text-muted">Precio unidad: ${producto.precio_oferta ? Number(producto.precio_oferta).toFixed(2) : Number(producto.precio).toFixed(2)} €</div>
                 </div>
 
                 <div class="text-end">

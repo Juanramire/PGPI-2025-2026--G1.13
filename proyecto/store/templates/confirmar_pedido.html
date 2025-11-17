@@ -1,21 +1,12 @@
 {% extends "base.html" %}
 {% load static %}
 {% block title %}Confirmación de pedido - MiTienda{% endblock %}
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'css/pedido.css' %}">
+{% endblock %}
+
 {% block content %}
-<style>
-    .producto-item {
-        padding: 10px;
-        border-bottom: 1px solid #ddd;
-    }
-    .producto-item:last-child {
-        border-bottom: none;
-    }
-    .mini-info small {
-        display:block;
-        line-height: 1.2;
-    }
-</style>
 
 <div class="container py-4">
 
@@ -28,6 +19,40 @@
         </div>
         <div class="card-body" id="lista-productos">
             Cargando productos...
+        </div>
+    </div>
+
+    <!-- RESUMEN DEL PEDIDO -->
+    <div class="card mb-4">
+        <div class="card-header fw-bold">
+            Resumen del Pedido
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-6"><strong>Subtotal:</strong></div>
+                <div class="col-6 text-end" id="res_subtotal">0.00 €</div>
+            </div>
+            <div class="row mt-2">
+                <div class="col-6"><strong>Descuento:</strong></div>
+                <div class="col-6 text-end text-danger" id="res_descuento">0.00 €</div>
+            </div>
+            <div class="row mt-2">
+                <div class="col-6"><strong>Precio con descuento:</strong></div>
+                <div class="col-6 text-end" id="res_precio_con_descuento">0.00 €</div>
+            </div>
+            <div class="row mt-2">
+                <div class="col-6"><strong>Coste envío:</strong></div>
+                <div class="col-6 text-end" id="res_coste_envio">0.00 €</div>
+            </div>
+            <div class="row mt-2">
+                <div class="col-6"><strong>Impuestos (21%):</strong></div>
+                <div class="col-6 text-end" id="res_impuestos">0.00 €</div>
+            </div>
+            <hr>
+            <div class="row mt-2 fw-bold fs-5">
+                <div class="col-6">TOTAL</div>
+                <div class="col-6 text-end" id="res_total">0.00 €</div>
+            </div>
         </div>
     </div>
 
@@ -56,9 +81,41 @@
                         <option value="">Seleccione...</option>
                         <option value="Tarjeta">Tarjeta de Crédito/Débito</option>
                         <option value="PayPal">PayPal</option>
-                        <option value="Transferencia">Transferencia Bancaria</option>
-                        <option value="Efectivo">Efectivo (Contra Entrega)</option>
                     </select>
+                </div>
+
+                <!-- CAMPOS TARJETA -->
+                <div id="tarjeta-campos" class="mb-3 border rounded p-3" style="display:none;background:#f8f9fa;">
+                    <h6 class="mb-2">Pagar con Tarjeta</h6>
+                    <div class="mb-2">
+                        <label class="form-label">Titular de la tarjeta</label>
+                        <input type="text" class="form-control" id="titular_tarjeta" placeholder="Nombre en la tarjeta">
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label">Número de tarjeta</label>
+                        <input type="text" class="form-control" id="numero_tarjeta" placeholder="XXXX XXXX XXXX XXXX" maxlength="19">
+                    </div>
+                    <div class="row">
+                        <div class="col-6 mb-2">
+                            <label class="form-label">Fecha expiración (MM/AA)</label>
+                            <input type="text" class="form-control" id="fecha_expiracion" placeholder="MM/AA" maxlength="5">
+                        </div>
+                        <div class="col-6 mb-2">
+                            <label class="form-label">CVC</label>
+                            <input type="password" class="form-control" id="cvc" placeholder="CVC" maxlength="4">
+                        </div>
+                    </div>
+                    <small class="text-muted">En producción usa un proveedor de pagos (Stripe, PayPal) para tokenizar los datos. No almacenes tarjetas en texto plano.</small>
+                </div>
+
+                <!-- CAMPOS PAYPAL -->
+                <div id="paypal-campos" class="mb-3 border rounded p-3" style="display:none;background:#f8f9fa;">
+                    <h6 class="mb-2">Pagar con PayPal</h6>
+                    <div class="mb-2">
+                        <label class="form-label">Email de PayPal</label>
+                        <input type="email" class="form-control" id="paypal_email" placeholder="email@ejemplo.com">
+                    </div>
+                    <small class="text-muted">Al seleccionar PayPal, el pago se procesará a través de PayPal (si está integrado) o te redirigiremos al flujo correspondiente.</small>
                 </div>
 
                 <button class="btn btn-primary w-100 mt-3" type="submit">Confirmar Pedido</button>
@@ -69,12 +126,105 @@
     </div>
     <script>
         // ----------------- HELPERS -----------------
-        
+        const obtenerCarrito = () => JSON.parse(localStorage.getItem('carrito')) || [];
+        const guardarCarrito = (carrito) => localStorage.setItem('carrito', JSON.stringify(carrito));
+        const vaciarCarrito = () => localStorage.removeItem('carrito');
 
-        
         // ----------------- PINTAR LISTA -----------------
-        
-        
+        const renderCarrito = () => {
+            const productos = obtenerCarrito();
+            const lista = document.getElementById('lista-productos');
+
+            // referencias al resumen
+            const elSubtotal = document.getElementById('res_subtotal');
+            const elDescuento = document.getElementById('res_descuento');
+            const elPrecioConDesc = document.getElementById('res_precio_con_descuento');
+            const elCosteEnvio = document.getElementById('res_coste_envio');
+            const elImpuestos = document.getElementById('res_impuestos');
+            const elTotal = document.getElementById('res_total');
+
+            if (productos.length === 0) {
+                lista.innerHTML = '<p class="text-muted text-center">No hay productos en tu pedido.</p>';
+                // limpiar resumen
+                elSubtotal.innerText = '0.00 €';
+                elDescuento.innerText = '0.00 €';
+                elPrecioConDesc.innerText = '0.00 €';
+                elCosteEnvio.innerText = '0.00 €';
+                elImpuestos.innerText = '0.00 €';
+                elTotal.innerText = '0.00 €';
+                return;
+            }
+
+            let subtotalOriginal = 0; // suma de precios originales
+            let subtotalConOferta = 0; // suma usando precio_oferta cuando exista
+
+            lista.innerHTML = productos.map((p, index) => {
+                const precioOriginal = Number(p.precio || 0);
+                const precioOferta = p.precio_oferta ? Number(p.precio_oferta) : precioOriginal;
+                const cantidad = Number(p.cantidad || 1);
+
+                subtotalOriginal += precioOriginal * cantidad;
+                subtotalConOferta += precioOferta * cantidad;
+
+                const ahorroUnit = Math.max(0, precioOriginal - precioOferta);
+                const ahorroTotal = ahorroUnit * cantidad;
+
+                const precioShow = p.precio_oferta ? `<span class="text-danger">${precioOferta.toFixed(2)} €</span> <small class="text-muted text-decoration-line-through">${precioOriginal.toFixed(2)} €</small>` : `${precioOriginal.toFixed(2)} €`;
+                const subtotalItem = (precioOferta * cantidad).toFixed(2);
+                const descuentoPorItem = ahorroUnit.toFixed(2);
+
+                return `
+                    <div class="producto-item d-flex justify-content-between align-items-center">
+                        <div class="mini-info">
+                            <strong>${p.nombre}</strong>
+                            <small>Color: ${p.color || '-'}, Talla: ${p.talla || '-'}</small>
+                            <small>${cantidad} x ${precioShow}</small>
+                            <div class="small text-muted">Precio original: ${precioOriginal.toFixed(2)} € · Precio con oferta: ${precioOferta.toFixed(2)} €</div>
+                            ${ahorroTotal > 0 ? `<div class="text-success small">Descuento por unidad: ${descuentoPorItem} € · Ahorro total: ${ahorroTotal.toFixed(2)} €</div>` : ''}
+                        </div>
+                        <div>
+                            <strong class="me-3">${subtotalItem} €</strong>
+                            <button class="btn btn-sm btn-outline-danger btn-eliminar-pedido" data-index="${index}">×</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            // Cálculos globales
+            const descuentoTotal = Math.max(0, subtotalOriginal - subtotalConOferta);
+            const precioConDescuento = subtotalConOferta; // ya incluye la oferta
+            const costeEnvio = precioConDescuento >= 50 ? 0 : 4.99;
+            const impuestos = +(precioConDescuento * 0.21).toFixed(2); // 21%
+            const total = +(precioConDescuento + costeEnvio + impuestos).toFixed(2);
+
+            // actualizar resumen en la UI (cliente)
+            elSubtotal.innerText = subtotalOriginal.toFixed(2) + ' €';
+            // mostrar descuento como valor positivo (cantidad ahorrada)
+            elDescuento.innerText = descuentoTotal.toFixed(2) + ' €';
+            elPrecioConDesc.innerText = precioConDescuento.toFixed(2) + ' €';
+            elCosteEnvio.innerText = costeEnvio.toFixed(2) + ' €';
+            elImpuestos.innerText = impuestos.toFixed(2) + ' €';
+            elTotal.innerText = total.toFixed(2) + ' €';
+
+            // añadir resumen final al DOM como bloque (reutilizamos la tarjeta de productos)
+            lista.innerHTML += `
+                <div class="producto-item d-flex justify-content-between align-items-center fw-bold fs-5 mt-3">
+                    <span>Total (pre-IVA y envío):</span>
+                    <span>${precioConDescuento.toFixed(2)} €</span>
+                </div>
+            `;
+        };
+
+        // ----------------- FUNCIONES DE MANIPULACIÓN -----------------
+        const eliminarProducto = (producto) => {
+            let carrito = obtenerCarrito();
+            // Usamos un identificador único para cada variante en el carrito
+            const idUnico = producto.id + '-' + (producto.color||'') + '-' + (producto.talla||'');
+            carrito = carrito.filter(p => (p.id + '-' + (p.color||'') + '-' + (p.talla||'')) !== idUnico);
+            guardarCarrito(carrito);
+            renderCarrito(); // Volver a pintar la lista
+        };
+
         // ----------------- CONTROLES -----------------
         document.addEventListener('click', (e) => {
     if (e.target.matches('.btn-sumar-pedido')) {
@@ -100,34 +250,187 @@
         // ----------------- CARGAR AL ABRIR -----------------
         window.onload = () => {
             renderCarrito();
-            
+
+            const metodoPagoSelect = document.getElementById('metodo_pago');
+            const tarjetaCampos = document.getElementById('tarjeta-campos');
+            const paypalCampos = document.getElementById('paypal-campos');
+
+            const toggleCamposPago = () => {
+                const v = metodoPagoSelect.value;
+                if (v === 'Tarjeta') {
+                    tarjetaCampos.style.display = 'block';
+                    paypalCampos.style.display = 'none';
+                    document.getElementById('titular_tarjeta').required = true;
+                    document.getElementById('numero_tarjeta').required = true;
+                    document.getElementById('fecha_expiracion').required = true;
+                    document.getElementById('cvc').required = true;
+                    document.getElementById('paypal_email').required = false;
+                } else if (v === 'PayPal') {
+                    tarjetaCampos.style.display = 'none';
+                    paypalCampos.style.display = 'block';
+                    document.getElementById('titular_tarjeta').required = false;
+                    document.getElementById('numero_tarjeta').required = false;
+                    document.getElementById('fecha_expiracion').required = false;
+                    document.getElementById('cvc').required = false;
+                    document.getElementById('paypal_email').required = true;
+                } else {
+                    tarjetaCampos.style.display = 'none';
+                    paypalCampos.style.display = 'none';
+                    document.getElementById('titular_tarjeta').required = false;
+                    document.getElementById('numero_tarjeta').required = false;
+                    document.getElementById('fecha_expiracion').required = false;
+                    document.getElementById('cvc').required = false;
+                    document.getElementById('paypal_email').required = false;
+                }
+            };
+
+            metodoPagoSelect.addEventListener('change', toggleCamposPago);
+
+            // Formateo automático del número de tarjeta: espacios cada 4 dígitos
+            const numeroTarjetaInput = document.getElementById('numero_tarjeta');
+            const fechaExpInput = document.getElementById('fecha_expiracion');
+
+            const formatCardNumber = (value) => {
+                const digits = value.replace(/\D/g, '').slice(0,16); // máximo 16 dígitos
+                // insertar espacio cada 4
+                return digits.match(/.{1,4}/g)?.join(' ') || digits;
+            };
+
+            numeroTarjetaInput && numeroTarjetaInput.addEventListener('input', (ev) => {
+                const formatted = formatCardNumber(ev.target.value);
+                ev.target.value = formatted;
+            });
+
+            // Fecha expiración: formato MM/AA fijo, barra inserted después de 2 dígitos
+            const formatExpiry = (value) => {
+                const digits = value.replace(/\D/g, '').slice(0,4);
+                if (digits.length <= 2) return digits;
+                return digits.slice(0,2) + '/' + digits.slice(2);
+            };
+
+            fechaExpInput && fechaExpInput.addEventListener('input', (ev) => {
+                const formatted = formatExpiry(ev.target.value);
+                ev.target.value = formatted;
+            });
         };
         
         // ----------------- ENVIAR PEDIDO -----------------
         document.getElementById("form-pedido").addEventListener("submit", (e) => {
-            e.preventDefault();
-        
+            e.preventDefault(); // Evitamos que el formulario se envíe de la forma tradicional
+
+            const metodo = document.getElementById("metodo_pago").value;
+
+            // Calculamos totales básicos en el cliente para mostrar antes de enviar
+            const productos = obtenerCarrito();
+            let subtotal = 0;
+            let descuento = 0;
+            productos.forEach(p => {
+                const precioUnit = p.precio_oferta ? Number(p.precio_oferta) : Number(p.precio);
+                const cantidad = Number(p.cantidad || 1);
+                subtotal += precioUnit * cantidad;
+                if (p.precio_oferta) {
+                    descuento += (Number(p.precio) - Number(p.precio_oferta)) * cantidad;
+                }
+            });
+            // costeo de envío simple (cliente calcula; el servidor recalculará si hace falta)
+            let coste_envio = subtotal >= 50 ? 0 : 4.99;
+
             const pedido = {
                 direccion_envio: document.getElementById("direccion_envio").value,
                 telefono: document.getElementById("telefono").value,
                 metodo_pago: document.getElementById("metodo_pago").value,
-                productos: obtenerCarrito()
+                productos: productos, // Obtenemos los productos del localStorage
+                coste_envio: coste_envio
             };
-        
-            console.log("Pedido listo para enviar al backend:", pedido);
-        
-            alert("Pedido enviado correctamente.");
-            fetch("/api/pedidos",{
-                method:"POST",
-                body:JSON.stringify(pedido)
+
+            // Añadir campos según método
+            if (metodo === 'Tarjeta') {
+                const titular = document.getElementById('titular_tarjeta').value.trim();
+                const numero = document.getElementById('numero_tarjeta').value.replace(/\s+/g, '');
+                const fecha = document.getElementById('fecha_expiracion').value.trim();
+                const cvc = document.getElementById('cvc').value.trim();
+
+                if (!titular || !numero || !fecha || !cvc) {
+                    alert('Por favor completa los datos de la tarjeta.');
+                    return;
+                }
+
+                // Validación simple: longitud mínima
+                if (numero.length < 13 || numero.length > 16) {
+                    alert('Número de tarjeta inválido.');
+                    return;
+                }
+
+                pedido.tarjeta = { titular, numero, fecha_expiracion: fecha, cvc };
+            }
+
+            if (metodo === 'PayPal') {
+                const paypalEmail = document.getElementById('paypal_email').value.trim();
+                if (!paypalEmail) {
+                    alert('Introduce el email de PayPal.');
+                    return;
+                }
+                pedido.paypal_email = paypalEmail;
+            }
+
+            // Enviamos los datos al backend
+            fetch("{% url 'confirmar_pedido' %}", {
+                method: "POST",
+                headers: {
+                    'Content-Type': 'application/json',
+                    // Si no usas @csrf_exempt, necesitarías enviar el token CSRF aquí
+                },
+                body: JSON.stringify(pedido)
             })
-            // Aquí podrías hacer fetch() al backend Django
-            // fetch("/api/pedidos/", { method: "POST", body: JSON.stringify(pedido), ... })
-        
+            .then(response => response.json())
+            .then(data => {
+                    if (data.error) {
+                        alert("Error al crear el pedido: " + data.error);
+                    } else {
+                        if (data.resumen) {
+                            const r = data.resumen;
+                            const items = data.items || [];
+
+                            // Actualizar el bloque de resumen con los valores del servidor (autoritativos)
+                            document.getElementById('res_subtotal').innerText = Number(r.subtotal).toFixed(2) + ' €';
+                            document.getElementById('res_descuento').innerText = Number(r.descuento).toFixed(2) + ' €';
+                            document.getElementById('res_precio_con_descuento').innerText = Number(r.subtotal - r.descuento).toFixed(2) + ' €';
+                            document.getElementById('res_coste_envio').innerText = Number(r.coste_envio).toFixed(2) + ' €';
+                            document.getElementById('res_impuestos').innerText = Number(r.impuestos).toFixed(2) + ' €';
+                            document.getElementById('res_total').innerText = Number(r.total).toFixed(2) + ' €';
+
+                            // Mostrar un resumen breve al usuario
+                            let msg = `Pedido creado (ID ${data.pedido_id})\n\nResumen:\n`;
+                            msg += `Subtotal: ${Number(r.subtotal).toFixed(2)} €\n`;
+                            msg += `Descuento: ${Number(r.descuento).toFixed(2)} €\n`;
+                            msg += `Coste envío: ${Number(r.coste_envio).toFixed(2)} €\n`;
+                            msg += `Impuestos: ${Number(r.impuestos).toFixed(2)} €\n`;
+                            msg += `TOTAL a pagar: ${Number(r.total).toFixed(2)} €\n\n`;
+                            msg += 'Detalle de productos:\n';
+                            items.forEach(it => {
+                                msg += `- ${it.nombre} (${it.color||'-'}, ${it.talla||'-'}) x${it.cantidad}: ${parseFloat(it.subtotal_item).toFixed(2)} €`;
+                                if (it.descuento_item && Number(it.descuento_item) > 0) {
+                                    msg += ` (Descuento: ${parseFloat(it.descuento_item).toFixed(2)} €)`;
+                                }
+                                msg += '\n';
+                            });
+
+                            alert(msg);
+                        } else {
+                            alert("¡Pedido realizado con éxito! ID del pedido: " + data.pedido_id);
+                        }
+
+                        vaciarCarrito(); // Limpiamos el carrito del localStorage
+                        window.location.href = "/"; // Redirigimos al inicio
+                    }
+            })
+            .catch(error => {
+                console.error("Error en la petición:", error);
+                alert("Ha ocurrido un error inesperado. Por favor, inténtalo de nuevo.");
+            });
+
         });
         </script>
         
 </div>
-<script src="{% static 'js/carrito.js' %}"></script>
 {% endblock %}
-
