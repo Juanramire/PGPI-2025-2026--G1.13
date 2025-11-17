@@ -111,11 +111,12 @@
                             </div>
 
                             <!-- Botón -->
-                            <button id="btn-anadir-carrito"
+                                <button id="btn-anadir-carrito"
                                     class="btn btn-warning btn-lg"
                                     data-producto-id="{{ producto.id }}"
                                     data-producto-nombre="{{ producto.nombre|escapejs }}"
-                                    data-producto-precio="{% if producto.precio_oferta %}{{ producto.precio_oferta }}{% else %}{{ producto.precio }}{% endif %}"
+                                    data-producto-precio-original="{{ producto.precio }}"
+                                    data-producto-precio-oferta="{% if producto.precio_oferta %}{{ producto.precio_oferta }}{% else %}{% endif %}"
                                     disabled>
                                 🛒 Añadir al carrito
                             </button>
@@ -183,10 +184,23 @@ document.addEventListener('DOMContentLoaded', function() {
 
     btnAnadir.addEventListener('click', function() {
 
+        // Convertir precios a números y calcular ahorro
+        const precioOriginalRaw = this.dataset.productoPrecioOriginal;
+        const precioOfertaRaw = this.dataset.productoPrecioOferta;
+        const precioOriginal = precioOriginalRaw ? parseFloat(precioOriginalRaw.replace(",", ".")) : 0;
+        const precioOferta = precioOfertaRaw ? parseFloat(precioOfertaRaw.replace(",", ".")) : null;
+        const cantidadDefault = 1;
+        const ahorroUnit = (precioOferta !== null) ? Math.max(0, precioOriginal - precioOferta) : 0;
+        const ahorroTotal = ahorroUnit * cantidadDefault;
+
         const producto = {
             id: this.dataset.productoId,
             nombre: this.dataset.productoNombre,
-            precio: this.dataset.productoPrecio,
+            precio: precioOriginal,
+            precio_oferta: precioOferta,
+            ahorro_unit: ahorroUnit,
+            ahorro_total: ahorroTotal,
+            cantidad: cantidadDefault,
             talla: tallaSelect.value,
             color: colorSelect.value,
             texto: textoInput.value || "",
