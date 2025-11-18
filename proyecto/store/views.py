@@ -178,7 +178,8 @@ def confirmar_pedido(request):
                         descuento_item = (Decimal(producto.precio) - Decimal(producto.precio_oferta)) * Decimal(cantidad)
                         descuento_item = descuento_item.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
                         descuento_total += descuento_item
-
+                    imagen=item_data.get('imagen')
+                    texto=item_data.get('texto')
                     ItemPedido.objects.create(
                         pedido=pedido,
                         producto=producto,
@@ -186,7 +187,9 @@ def confirmar_pedido(request):
                         talla=variante.talla,
                         cantidad=cantidad,
                         precio_unitario=precio_unitario,
-                        total=total_item
+                        total=total_item,
+                        texto=texto,
+                        imagen=imagen
                     )
 
                     items_response.append({
@@ -312,3 +315,13 @@ def gestionar_stock(request):
         'categorias_navbar': categorias,
     }
     return render(request, 'admin_stock.html', contexto)
+
+
+@login_required
+def mis_pedidos(request):
+    pedidos = request.user.pedidos.all().order_by('-fecha_creacion')
+    return render(request, "pedidos.html", {"pedidos": pedidos})
+@login_required
+def detalle_pedido(request, pedido_id):
+    pedido = get_object_or_404(Pedido, id=pedido_id, cliente=request.user)
+    return render(request, "detalle_pedido.html", {"pedido": pedido})

@@ -210,6 +210,8 @@ document.addEventListener('DOMContentLoaded', function() {
         };
 
         añadirCarrito(producto);
+        window.location.href = "{% url 'productos' %}";
+
     });
 });
 
