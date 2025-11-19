@@ -21,6 +21,7 @@ from django.conf.urls.static import static
 from store import views
 
 urlpatterns = [
+    path('admin/stock/', views.gestionar_stock, name='gestionar_stock'),
     path('admin/', admin.site.urls),
     path('', views.productos, name='productos'),
     path('producto/<int:id>/', views.detalle_producto, name='detalle_producto'),
@@ -28,6 +29,8 @@ urlpatterns = [
     path('logout/', views.logout_view, name='logout'),
     path('register/', views.registro_view, name='registro'),
     path('pedidos/', views.confirmar_pedido, name='confirmar_pedido'),
+    path('misPedidos/',views.mis_pedidos,name='mis_pedidos'),
+    path('pedidos/<int:pedido_id>',views.detalle_pedido,name="pedido")
 ]
 
 # Servir archivos media en desarrollo

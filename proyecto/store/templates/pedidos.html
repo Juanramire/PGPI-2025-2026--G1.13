@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+
+<div class="container mt-4 mb-5">
+
+    <h2 class="mb-4">Mis pedidos</h2>
+
+    {% if pedidos %}
+        <div class="list-group">
+
+            {% for pedido in pedidos %}
+            <a href="{% url 'pedido' pedido.id %}" class="list-group-item list-group-item-action py-3">
+
+                    <div class="d-flex justify-content-between align-items-center">
+
+                        <!-- Número de pedido -->
+                        <div>
+                            <h5 class="mb-1">Pedido Nº {{ pedido.numero_pedido }}</h5>
+                            <small class="text-muted">
+                                {{ pedido.fecha_creacion|date:"d/m/Y H:i" }}
+                            </small>
+                        </div>
+
+                        <!-- Estado -->
+                        <span class="badge 
+                            {% if pedido.estado == 'Pendiente' %} bg-warning 
+                            {% elif pedido.estado == 'Procesando' %} bg-primary 
+                            {% elif pedido.estado == 'Enviado' %} bg-info 
+                            {% elif pedido.estado == 'Entregado' %} bg-success 
+                            {% elif pedido.estado == 'Cancelado' %} bg-danger 
+                            {% endif %}
+                            p-2">
+                            {{ pedido.estado }}
+                        </span>
+                    </div>
+
+                    <hr>
+
+                    <!-- Totales -->
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <p class="m-0"><strong>Subtotal:</strong> {{ pedido.subtotal }} €</p>
+                            <p class="m-0"><strong>Impuestos:</strong> {{ pedido.impuestos }} €</p>
+                            <p class="m-0"><strong>Envío:</strong> {{ pedido.coste_entrega }} €</p>
+                            {% if pedido.descuento > 0 %}
+                                <p class="m-0 text-success"><strong>Descuento:</strong> -{{ pedido.descuento }} €</p>
+                            {% endif %}
+                        </div>
+
+                        <div class="text-end">
+                            <p class="m-0 fs-5"><strong>Total:</strong> {{ pedido.total }} €</p>
+                            <small class="text-muted">Pago: {{ pedido.metodo_pago }}</small>
+                        </div>
+                    </div>
+
+                </a>
+            {% endfor %}
+        </div>
+
+    {% else %}
+        <p class="text-muted">No has realizado ningún pedido todavía.</p>
+    {% endif %}
+</div>
+
+{% endblock %}
