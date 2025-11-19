@@ -88,10 +88,6 @@
                 <div id="tarjeta-campos" class="mb-3 border rounded p-3" style="display:none;background:#f8f9fa;">
                     <h6 class="mb-2">Pagar con Tarjeta</h6>
                     <div class="mb-2">
-                        <label class="form-label">Titular de la tarjeta</label>
-                        <input type="text" class="form-control" id="titular_tarjeta" placeholder="Nombre en la tarjeta">
-                    </div>
-                    <div class="mb-2">
                         <label class="form-label">Número de tarjeta</label>
                         <input type="text" class="form-control" id="numero_tarjeta" placeholder="XXXX XXXX XXXX XXXX" maxlength="19">
                     </div>
@@ -102,7 +98,7 @@
                         </div>
                         <div class="col-6 mb-2">
                             <label class="form-label">CVC</label>
-                            <input type="password" class="form-control" id="cvc" placeholder="CVC" maxlength="4">
+                            <input type="password" inputmode="numeric" pattern="\d{3}" class="form-control" id="cvc" placeholder="CVC" maxlength="3" autocomplete="cc-csc">
                         </div>
                     </div>
                     <small class="text-muted">En producción usa un proveedor de pagos (Stripe, PayPal) para tokenizar los datos. No almacenes tarjetas en texto plano.</small>
@@ -260,7 +256,6 @@
                 if (v === 'Tarjeta') {
                     tarjetaCampos.style.display = 'block';
                     paypalCampos.style.display = 'none';
-                    document.getElementById('titular_tarjeta').required = true;
                     document.getElementById('numero_tarjeta').required = true;
                     document.getElementById('fecha_expiracion').required = true;
                     document.getElementById('cvc').required = true;
@@ -268,7 +263,6 @@
                 } else if (v === 'PayPal') {
                     tarjetaCampos.style.display = 'none';
                     paypalCampos.style.display = 'block';
-                    document.getElementById('titular_tarjeta').required = false;
                     document.getElementById('numero_tarjeta').required = false;
                     document.getElementById('fecha_expiracion').required = false;
                     document.getElementById('cvc').required = false;
@@ -276,7 +270,6 @@
                 } else {
                     tarjetaCampos.style.display = 'none';
                     paypalCampos.style.display = 'none';
-                    document.getElementById('titular_tarjeta').required = false;
                     document.getElementById('numero_tarjeta').required = false;
                     document.getElementById('fecha_expiracion').required = false;
                     document.getElementById('cvc').required = false;
@@ -289,6 +282,7 @@
             // Formateo automático del número de tarjeta: espacios cada 4 dígitos
             const numeroTarjetaInput = document.getElementById('numero_tarjeta');
             const fechaExpInput = document.getElementById('fecha_expiracion');
+            const cvcInput = document.getElementById('cvc');
 
             const formatCardNumber = (value) => {
                 const digits = value.replace(/\D/g, '').slice(0,16); // máximo 16 dígitos
@@ -311,6 +305,11 @@
             fechaExpInput && fechaExpInput.addEventListener('input', (ev) => {
                 const formatted = formatExpiry(ev.target.value);
                 ev.target.value = formatted;
+            });
+
+            // CVC: solo dígitos, máximo 3
+            cvcInput && cvcInput.addEventListener('input', (ev) => {
+                ev.target.value = ev.target.value.replace(/\D/g, '').slice(0,3);
             });
         };
         
@@ -345,23 +344,27 @@
 
             // Añadir campos según método
             if (metodo === 'Tarjeta') {
-                const titular = document.getElementById('titular_tarjeta').value.trim();
                 const numero = document.getElementById('numero_tarjeta').value.replace(/\s+/g, '');
                 const fecha = document.getElementById('fecha_expiracion').value.trim();
                 const cvc = document.getElementById('cvc').value.trim();
 
-                if (!titular || !numero || !fecha || !cvc) {
+                if (!numero || !fecha || !cvc) {
                     alert('Por favor completa los datos de la tarjeta.');
                     return;
                 }
 
-                // Validación simple: longitud mínima
+                // Validación simple: longitud mínima del número y CVC de 3 dígitos
                 if (numero.length < 13 || numero.length > 16) {
                     alert('Número de tarjeta inválido.');
                     return;
                 }
 
-                pedido.tarjeta = { titular, numero, fecha_expiracion: fecha, cvc };
+                if (cvc.length !== 3) {
+                    alert('CVC inválido. Debe tener 3 dígitos.');
+                    return;
+                }
+
+                pedido.tarjeta = { numero, fecha_expiracion: fecha, cvc };
             }
 
             if (metodo === 'PayPal') {

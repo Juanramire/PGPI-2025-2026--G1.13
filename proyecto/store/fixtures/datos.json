@@ -92,7 +92,7 @@
         "categoria": 1,
         "fecha_creacion": "2024-01-01T10:00:00Z",
         "fecha_actualizacion": "2024-01-01T10:00:00Z",
-        "imagen": "productos/logo.png"
+        "imagen": "productos/camiseta_deportiva_hombre.jpg"
       }
     },
     {
@@ -110,7 +110,7 @@
         "categoria": 2,
         "fecha_creacion": "2024-01-02T11:00:00Z",
         "fecha_actualizacion": "2024-01-02T11:00:00Z",
-        "imagen": "productos/logo.png"
+        "imagen": "productos/pantalon_casual_mujer.png"
 
       }
     },
@@ -128,7 +128,8 @@
         "es_destacado": true,
         "categoria": 3,
         "fecha_creacion": "2024-01-03T12:00:00Z",
-        "fecha_actualizacion": "2024-01-03T12:00:00Z"
+        "fecha_actualizacion": "2024-01-03T12:00:00Z",
+        "imagen": "productos/zapatillas_running.png"
       }
     },
     {
@@ -145,7 +146,8 @@
         "es_destacado": false,
         "categoria": 2,
         "fecha_creacion": "2024-01-04T10:00:00Z",
-        "fecha_actualizacion": "2024-01-04T10:00:00Z"
+        "fecha_actualizacion": "2024-01-04T10:00:00Z",
+        "imagen": "productos/sudadera_con_capucha.jpg"
       }
     },
     {
@@ -162,7 +164,8 @@
         "es_destacado": false,
         "categoria": 1,
         "fecha_creacion": "2024-01-05T09:30:00Z",
-        "fecha_actualizacion": "2024-01-05T09:30:00Z"
+        "fecha_actualizacion": "2024-01-05T09:30:00Z",
+        "imagen": "productos/mallas_mujer.png"
       }
     },
     {
@@ -179,7 +182,8 @@
         "es_destacado": false,
         "categoria": 2,
         "fecha_creacion": "2024-01-06T10:10:00Z",
-        "fecha_actualizacion": "2024-01-06T10:10:00Z"
+        "fecha_actualizacion": "2024-01-06T10:10:00Z",
+        "imagen": "productos/camiseta_casual_blanca.png"
       }
     },
     {
@@ -196,7 +200,8 @@
         "es_destacado": true,
         "categoria": 1,
         "fecha_creacion": "2024-01-07T13:00:00Z",
-        "fecha_actualizacion": "2024-01-07T13:00:00Z"
+        "fecha_actualizacion": "2024-01-07T13:00:00Z",
+        "imagen": "productos/chaqueta_impermeable.png"
       }
     },
     {
@@ -213,7 +218,8 @@
         "es_destacado": false,
         "categoria": 2,
         "fecha_creacion": "2024-01-08T10:00:00Z",
-        "fecha_actualizacion": "2024-01-08T10:00:00Z"
+        "fecha_actualizacion": "2024-01-08T10:00:00Z",
+        "imagen": "productos/polo.jpg"
       }
     },
     {
@@ -230,7 +236,8 @@
         "es_destacado": true,
         "categoria": 3,
         "fecha_creacion": "2024-01-09T11:30:00Z",
-        "fecha_actualizacion": "2024-01-09T11:30:00Z"
+        "fecha_actualizacion": "2024-01-09T11:30:00Z",
+        "imagen": "productos/zapatilla_urbana.png"
       }
     },
     {
@@ -247,7 +254,8 @@
         "es_destacado": false,
         "categoria": 4,
         "fecha_creacion": "2024-01-10T09:00:00Z",
-        "fecha_actualizacion": "2024-01-10T09:00:00Z"
+        "fecha_actualizacion": "2024-01-10T09:00:00Z",
+        "imagen": "productos/gorra_deportiva.png"
       }
     },
     {
@@ -264,7 +272,8 @@
         "es_destacado": true,
         "categoria": 4,
         "fecha_creacion": "2024-01-11T08:00:00Z",
-        "fecha_actualizacion": "2024-01-11T08:00:00Z"
+        "fecha_actualizacion": "2024-01-11T08:00:00Z",
+        "imagen": "productos/mochila_deportiva.png"
       }
     },
     {
@@ -281,7 +290,8 @@
         "es_destacado": false,
         "categoria": 4,
         "fecha_creacion": "2024-01-12T07:45:00Z",
-        "fecha_actualizacion": "2024-01-12T07:45:00Z"
+        "fecha_actualizacion": "2024-01-12T07:45:00Z",
+        "imagen": "productos/calcetin_tecnico.jpg"
       }
     },
     {
@@ -298,7 +308,8 @@
         "es_destacado": false,
         "categoria": 1,
         "fecha_creacion": "2024-01-13T09:10:00Z",
-        "fecha_actualizacion": "2024-01-13T09:10:00Z"
+        "fecha_actualizacion": "2024-01-13T09:10:00Z",
+        "imagen": "productos/short_deportivo.png"
       }
     },
     {
@@ -315,7 +326,8 @@
         "es_destacado": false,
         "categoria": 2,
         "fecha_creacion": "2024-01-14T08:30:00Z",
-        "fecha_actualizacion": "2024-01-14T08:30:00Z"
+        "fecha_actualizacion": "2024-01-14T08:30:00Z",
+        "imagen": "productos/sudadera_casual_mujer.png"
       }
     },
     {
@@ -332,7 +344,8 @@
         "es_destacado": true,
         "categoria": 3,
         "fecha_creacion": "2024-01-15T10:00:00Z",
-        "fecha_actualizacion": "2024-01-15T10:00:00Z"
+        "fecha_actualizacion": "2024-01-15T10:00:00Z",
+        "imagen": "productos/botines_urbanos.png"
       }
     },
 
