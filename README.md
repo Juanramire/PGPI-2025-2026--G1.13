@@ -61,6 +61,7 @@ python -m venv .venv
 # Instalar dependencias principales
 pip install django
 pip install Pillow
+pip install python-dotenv
 
 # Generar migraciones (se creó 0002_alter_cliente_email_alter_producto_marca)
 python manage.py makemigrations
@@ -78,3 +79,20 @@ python manage.py runserver
 Tras ejecutar `runserver`, el proyecto queda disponible en `http://127.0.0.1:8000/`.  
 - La página principal (`/`) muestra el catálogo de productos, con soporte para filtrar por nombre usando la query `?nombre=...`.  
 - La autenticación se maneja a través de `/login/`, `/logout/` y `/register/`.
+
+## Envío de correos de confirmación
+
+Al confirmar un pedido el backend usa las variables de entorno para configurar el backend SMTP y enviar un `send_mail` al correo del usuario. Ya que `settings.py` carga `.env` con `python-dotenv`, basta con definir allí estos valores antes de arrancar `runserver`:
+
+```
+EMAIL_BACKEND=django.core.mail.backends.smtp.EmailBackend
+EMAIL_HOST=smtp.mailersend.net
+EMAIL_PORT=587
+EMAIL_HOST_USER=<tu usuario SMTP>
+EMAIL_HOST_PASSWORD=<tu contraseña SMTP>
+EMAIL_USE_TLS=True
+EMAIL_USE_SSL=False
+DEFAULT_FROM_EMAIL=no-reply@midominio.test
+```
+
+MailerSend ofrece la información (host, puerto y credenciales SMTP) dentro de su panel bajo “SMTP credentials”. Ajusta el `DEFAULT_FROM_EMAIL` según la dirección que quieras que aparezca como remitente y no compartas las credenciales en el repositorio. Con estas variables cargadas, cada pedido exitoso dispara un correo que podrás ver en la bandeja de MailerSend o en el buzón real si usas producción.
