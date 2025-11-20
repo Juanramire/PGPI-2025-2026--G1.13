@@ -64,6 +64,7 @@
         <div class="card-body">
 
             <form id="form-pedido" >
+                {% csrf_token %}
                 
                 <div class="mb-3">
                     <label class="form-label">Dirección de Envío</label>
@@ -84,27 +85,14 @@
                     </select>
                 </div>
 
-                <!-- CAMPOS TARJETA -->
-                <div id="tarjeta-campos" class="mb-3 border rounded p-3" style="display:none;background:#f8f9fa;">
-                    <h6 class="mb-2">Pagar con Tarjeta</h6>
-                    <div class="mb-2">
-                        <label class="form-label">Número de tarjeta</label>
-                        <input type="text" class="form-control" id="numero_tarjeta" placeholder="XXXX XXXX XXXX XXXX" maxlength="19">
-                    </div>
-                    <div class="row">
-                        <div class="col-6 mb-2">
-                            <label class="form-label">Fecha expiración (MM/AA)</label>
-                            <input type="text" class="form-control" id="fecha_expiracion" placeholder="MM/AA" maxlength="5">
-                        </div>
-                        <div class="col-6 mb-2">
-                            <label class="form-label">CVC</label>
-                            <input type="password" inputmode="numeric" pattern="\d{3}" class="form-control" id="cvc" placeholder="CVC" maxlength="3" autocomplete="cc-csc">
-                        </div>
-                    </div>
-                    <small class="text-muted">En producción usa un proveedor de pagos (Stripe, PayPal) para tokenizar los datos. No almacenes tarjetas en texto plano.</small>
+                <div id="stripe-element-wrapper" class="mb-3 border rounded p-3" style="display:none;background:#f8f9fa;">
+                    <h6 class="mb-2">Pagar con Stripe</h6>
+                    <div id="payment-element"></div>
+                    <div id="payment-message" class="text-danger mt-2" role="alert"></div>
+                    <small class="text-muted d-block">Los datos de la tarjeta se tokenizan directamente en Stripe. Nosotros no almacenamos la tarjeta.</small>
                 </div>
 
-                <!-- CAMPOS PAYPAL -->
+                <!-- CAMPOS PAYPAL -->                <!-- CAMPOS PAYPAL -->
                 <div id="paypal-campos" class="mb-3 border rounded p-3" style="display:none;background:#f8f9fa;">
                     <h6 class="mb-2">Pagar con PayPal</h6>
                     <div class="mb-2">
@@ -114,326 +102,380 @@
                     <small class="text-muted">Al seleccionar PayPal, el pago se procesará a través de PayPal (si está integrado) o te redirigiremos al flujo correspondiente.</small>
                 </div>
 
-                <button class="btn btn-primary w-100 mt-3" type="submit">Confirmar Pedido</button>
+                <button id="btn-confirmar" class="btn btn-primary w-100 mt-3" type="submit">Confirmar Pedido</button>
             
             </form>
 
         </div>
     </div>
-    <script>
-        // ----------------- HELPERS -----------------
-        const obtenerCarrito = () => JSON.parse(localStorage.getItem('carrito')) || [];
-        const guardarCarrito = (carrito) => localStorage.setItem('carrito', JSON.stringify(carrito));
-        const vaciarCarrito = () => localStorage.removeItem('carrito');
+    
+        
+</div>
+{% endblock %}
 
-        // ----------------- PINTAR LISTA -----------------
-        const renderCarrito = () => {
+{% block scripts %}
+<script src="https://js.stripe.com/v3/"></script>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const lista = document.getElementById('lista-productos');
+    const elSubtotal = document.getElementById('res_subtotal');
+    const elDescuento = document.getElementById('res_descuento');
+    const elPrecioConDesc = document.getElementById('res_precio_con_descuento');
+    const elCosteEnvio = document.getElementById('res_coste_envio');
+    const elImpuestos = document.getElementById('res_impuestos');
+    const elTotal = document.getElementById('res_total');
+    const metodoPagoSelect = document.getElementById('metodo_pago');
+    const paypalCampos = document.getElementById('paypal-campos');
+    const stripeWrapper = document.getElementById('stripe-element-wrapper');
+    const paymentMessageEl = document.getElementById('payment-message');
+    const btnConfirmar = document.getElementById('btn-confirmar');
+    const formPedido = document.getElementById('form-pedido');
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value || '';
+    const stripePublicKey = "{{ stripe_publishable_key|default:'' }}";
+    const stripeInstance = stripePublicKey ? Stripe(stripePublicKey) : null;
+
+    let stripeElements = null;
+    let stripePaymentElement = null;
+    let stripeClientSecret = null;
+    let ultimoResumenCliente = {
+        subtotal: 0,
+        descuento: 0,
+        coste_envio: 0,
+        impuestos: 0,
+        total: 0
+    };
+
+    const invalidarStripeIntent = () => {
+        if (stripePaymentElement) {
+            stripePaymentElement.unmount();
+            stripePaymentElement = null;
+        }
+        stripeElements = null;
+        stripeClientSecret = null;
+        if (paymentMessageEl) {
+            paymentMessageEl.textContent = '';
+        }
+    };
+
+    const renderCarrito = () => {
+        const productos = obtenerCarrito();
+        if (!productos.length) {
+            lista.innerHTML = '<p class="text-muted text-center m-0">No hay productos en tu pedido.</p>';
+            elSubtotal.innerText = '0.00 €';
+            elDescuento.innerText = '0.00 €';
+            elPrecioConDesc.innerText = '0.00 €';
+            elCosteEnvio.innerText = '0.00 €';
+            elImpuestos.innerText = '0.00 €';
+            elTotal.innerText = '0.00 €';
+            ultimoResumenCliente = {
+                subtotal: 0,
+                descuento: 0,
+                coste_envio: 0,
+                impuestos: 0,
+                total: 0
+            };
+            invalidarStripeIntent();
+            return;
+        }
+
+        invalidarStripeIntent();
+
+        let subtotalOriginal = 0;
+        let subtotalConOferta = 0;
+
+        lista.innerHTML = productos.map((p, index) => {
+            const precioOriginal = Number(p.precio || 0);
+            const precioOferta = p.precio_oferta ? Number(p.precio_oferta) : precioOriginal;
+            const cantidad = Number(p.cantidad || 1);
+
+            subtotalOriginal += precioOriginal * cantidad;
+            subtotalConOferta += precioOferta * cantidad;
+
+            const ahorroUnit = Math.max(0, precioOriginal - precioOferta);
+            const ahorroTotal = ahorroUnit * cantidad;
+            const subtotalItem = (precioOferta * cantidad).toFixed(2);
+            const precioShow = p.precio_oferta
+                ? `<span class="text-danger">${precioOferta.toFixed(2)} €</span> <small class="text-muted text-decoration-line-through">${precioOriginal.toFixed(2)} €</small>`
+                : `${precioOriginal.toFixed(2)} €`;
+
+            return `
+                <div class="producto-item d-flex justify-content-between align-items-center">
+                    <div class="mini-info">
+                        <strong>${p.nombre}</strong>
+                        <small>Color: ${p.color || '-'}, Talla: ${p.talla || '-'}</small>
+                        <small>${cantidad} x ${precioShow}</small>
+                        <div class="small text-muted">Precio original: ${precioOriginal.toFixed(2)} € · Precio con oferta: ${precioOferta.toFixed(2)} €</div>
+                        ${ahorroTotal > 0 ? `<div class="text-success small">Descuento por unidad: ${ahorroUnit.toFixed(2)} € · Ahorro total: ${ahorroTotal.toFixed(2)} €</div>` : ''}
+                    </div>
+                    <div>
+                        <strong class="me-3">${subtotalItem} €</strong>
+                        <button class="btn btn-sm btn-outline-danger btn-eliminar-pedido" data-index="${index}">×</button>
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        const descuentoTotal = Math.max(0, subtotalOriginal - subtotalConOferta);
+        const precioConDescuento = subtotalConOferta;
+        const costeEnvio = precioConDescuento >= 50 ? 0 : 4.99;
+        const impuestos = +(precioConDescuento * 0.21).toFixed(2);
+        const total = +(precioConDescuento + costeEnvio + impuestos).toFixed(2);
+
+        elSubtotal.innerText = subtotalOriginal.toFixed(2) + ' €';
+        elDescuento.innerText = descuentoTotal.toFixed(2) + ' €';
+        elPrecioConDesc.innerText = precioConDescuento.toFixed(2) + ' €';
+        elCosteEnvio.innerText = costeEnvio.toFixed(2) + ' €';
+        elImpuestos.innerText = impuestos.toFixed(2) + ' €';
+        elTotal.innerText = total.toFixed(2) + ' €';
+
+        lista.innerHTML += `
+            <div class="producto-item d-flex justify-content-between align-items-center fw-bold fs-5 mt-3">
+                <span>Total (pre-IVA y envío):</span>
+                <span>${precioConDescuento.toFixed(2)} €</span>
+            </div>
+        `;
+
+        ultimoResumenCliente = {
+            subtotal: Number(precioConDescuento.toFixed(2)),
+            descuento: Number(descuentoTotal.toFixed(2)),
+            coste_envio: Number(costeEnvio.toFixed(2)),
+            impuestos: Number(impuestos.toFixed(2)),
+            total: Number(total.toFixed(2))
+        };
+    };
+
+    document.addEventListener('click', (event) => {
+        if (event.target.matches('.btn-sumar-pedido')) {
+            const index = event.target.dataset.index;
             const productos = obtenerCarrito();
-            const lista = document.getElementById('lista-productos');
+            incrementar(productos[index]);
+            renderCarrito();
+        }
 
-            // referencias al resumen
-            const elSubtotal = document.getElementById('res_subtotal');
-            const elDescuento = document.getElementById('res_descuento');
-            const elPrecioConDesc = document.getElementById('res_precio_con_descuento');
-            const elCosteEnvio = document.getElementById('res_coste_envio');
-            const elImpuestos = document.getElementById('res_impuestos');
-            const elTotal = document.getElementById('res_total');
+        if (event.target.matches('.btn-restar-pedido')) {
+            const index = event.target.dataset.index;
+            const productos = obtenerCarrito();
+            decrementar(productos[index]);
+            renderCarrito();
+        }
 
-            if (productos.length === 0) {
-                lista.innerHTML = '<p class="text-muted text-center">No hay productos en tu pedido.</p>';
-                // limpiar resumen
-                elSubtotal.innerText = '0.00 €';
-                elDescuento.innerText = '0.00 €';
-                elPrecioConDesc.innerText = '0.00 €';
-                elCosteEnvio.innerText = '0.00 €';
-                elImpuestos.innerText = '0.00 €';
-                elTotal.innerText = '0.00 €';
+        if (event.target.matches('.btn-eliminar-pedido')) {
+            const index = event.target.dataset.index;
+            const productos = obtenerCarrito();
+            eliminarProducto(productos[index]);
+            renderCarrito();
+        }
+    });
+
+    const toggleCamposPago = () => {
+        const valor = metodoPagoSelect.value;
+        if (valor === 'Tarjeta') {
+            stripeWrapper.style.display = 'block';
+            paypalCampos.style.display = 'none';
+            prepararStripePago();
+        } else if (valor === 'PayPal') {
+            stripeWrapper.style.display = 'none';
+            paypalCampos.style.display = 'block';
+            invalidarStripeIntent();
+        } else {
+            stripeWrapper.style.display = 'none';
+            paypalCampos.style.display = 'none';
+            invalidarStripeIntent();
+        }
+    };
+
+    const prepararStripePago = async () => {
+        if (!stripeInstance) {
+            if (paymentMessageEl) paymentMessageEl.textContent = 'Stripe no está configurado.';
+            return;
+        }
+
+        if (!obtenerCarrito().length) {
+            if (paymentMessageEl) paymentMessageEl.textContent = 'Añade productos al carrito antes de pagar.';
+            return;
+        }
+
+        if (stripeClientSecret) {
+            return;
+        }
+
+        btnConfirmar.disabled = true;
+        try {
+            const response = await fetch("{% url 'crear_payment_intent' %}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrfToken
+                },
+                body: JSON.stringify({
+                    productos: obtenerCarrito(),
+                    coste_envio: ultimoResumenCliente.coste_envio
+                })
+            });
+
+            const data = await response.json();
+            if (!response.ok || data.error) {
+                throw new Error(data.error || 'No se pudo preparar el pago.');
+            }
+
+            stripeClientSecret = data.client_secret;
+            if (stripePaymentElement) {
+                stripePaymentElement.unmount();
+            }
+
+            stripeElements = stripeInstance.elements({ clientSecret: stripeClientSecret });
+            stripePaymentElement = stripeElements.create('payment');
+            stripePaymentElement.mount('#payment-element');
+
+            if (paymentMessageEl) paymentMessageEl.textContent = '';
+        } catch (error) {
+            if (paymentMessageEl) paymentMessageEl.textContent = error.message;
+            stripeClientSecret = null;
+        } finally {
+            btnConfirmar.disabled = false;
+        }
+    };
+
+    const actualizarResumenDesdeServidor = (resumen) => {
+        if (!resumen) return;
+        elSubtotal.innerText = Number(resumen.subtotal).toFixed(2) + ' €';
+        elDescuento.innerText = Number(resumen.descuento).toFixed(2) + ' €';
+        elPrecioConDesc.innerText = (Number(resumen.subtotal) - Number(resumen.descuento)).toFixed(2) + ' €';
+        elCosteEnvio.innerText = Number(resumen.coste_envio).toFixed(2) + ' €';
+        elImpuestos.innerText = Number(resumen.impuestos).toFixed(2) + ' €';
+        elTotal.innerText = Number(resumen.total).toFixed(2) + ' €';
+    };
+
+    const enviarPedido = async (extra = {}) => {
+        const productos = obtenerCarrito();
+        const metodo = metodoPagoSelect.value;
+        const direccion = document.getElementById('direccion_envio').value.trim();
+        const telefono = document.getElementById('telefono').value.trim();
+
+        if (!direccion || !telefono) {
+            alert('Completa la dirección y el teléfono.');
+            return;
+        }
+
+        if (!productos.length) {
+            alert('Tu carrito está vacío.');
+            return;
+        }
+
+        const payload = {
+            direccion_envio: direccion,
+            telefono,
+            metodo_pago: metodo,
+            productos,
+            coste_envio: ultimoResumenCliente.coste_envio,
+            ...extra
+        };
+
+        if (metodo === 'PayPal') {
+            const paypalEmail = document.getElementById('paypal_email').value.trim();
+            if (!paypalEmail) {
+                alert('Introduce el email de PayPal.');
+                return;
+            }
+            payload.paypal_email = paypalEmail;
+        }
+
+        const response = await fetch("{% url 'confirmar_pedido' %}", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken
+            },
+            body: JSON.stringify(payload)
+        });
+
+        const data = await response.json();
+        if (!response.ok || data.error) {
+            throw new Error(data.error || 'No se pudo crear el pedido.');
+        }
+
+        if (data.resumen) {
+            actualizarResumenDesdeServidor(data.resumen);
+            const items = data.items || [];
+            let mensaje = `Pedido creado (ID ${data.pedido_id})\\n\\nResumen:\\n`;
+            mensaje += `Subtotal: ${Number(data.resumen.subtotal).toFixed(2)} €\\n`;
+            mensaje += `Descuento: ${Number(data.resumen.descuento).toFixed(2)} €\\n`;
+            mensaje += `Coste envío: ${Number(data.resumen.coste_envio).toFixed(2)} €\\n`;
+            mensaje += `Impuestos: ${Number(data.resumen.impuestos).toFixed(2)} €\\n`;
+            mensaje += `TOTAL a pagar: ${Number(data.resumen.total).toFixed(2)} €\\n\\n`;
+            mensaje += 'Detalle de productos:\\n';
+            items.forEach(it => {
+                mensaje += `- ${it.nombre} (${it.color||'-'}, ${it.talla||'-'}) x${it.cantidad}: ${parseFloat(it.subtotal_item).toFixed(2)} €`;
+                if (it.descuento_item && Number(it.descuento_item) > 0) {
+                    mensaje += ` (Descuento: ${parseFloat(it.descuento_item).toFixed(2)} €)`;
+                }
+                mensaje += '\\n';
+            });
+            alert(mensaje);
+        } else {
+            alert(`¡Pedido realizado con éxito! ID del pedido: ${data.pedido_id}`);
+        }
+
+        vaciarCarrito();
+        window.location.href = '/';
+    };
+
+    formPedido.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const metodo = metodoPagoSelect.value;
+        if (!metodo) {
+            alert('Selecciona un método de pago.');
+            return;
+        }
+
+        if (metodo === 'Tarjeta') {
+            if (!stripeInstance) {
+                alert('Stripe no está disponible en este momento.');
+                return;
+            }
+            await prepararStripePago();
+            if (!stripeClientSecret || !stripeElements) {
                 return;
             }
 
-            let subtotalOriginal = 0; // suma de precios originales
-            let subtotalConOferta = 0; // suma usando precio_oferta cuando exista
+            btnConfirmar.disabled = true;
+            try {
+                const { error, paymentIntent } = await stripeInstance.confirmPayment({
+                    elements: stripeElements,
+                    confirmParams: {
+                        return_url: window.location.href
+                    },
+                    redirect: 'if_required'
+                });
 
-            lista.innerHTML = productos.map((p, index) => {
-                const precioOriginal = Number(p.precio || 0);
-                const precioOferta = p.precio_oferta ? Number(p.precio_oferta) : precioOriginal;
-                const cantidad = Number(p.cantidad || 1);
+                if (error) {
+                    if (paymentMessageEl) paymentMessageEl.textContent = error.message;
+                    return;
+                }
 
-                subtotalOriginal += precioOriginal * cantidad;
-                subtotalConOferta += precioOferta * cantidad;
+                if (!paymentIntent || paymentIntent.status !== 'succeeded') {
+                    if (paymentMessageEl) paymentMessageEl.textContent = 'No se pudo completar el pago.';
+                    return;
+                }
 
-                const ahorroUnit = Math.max(0, precioOriginal - precioOferta);
-                const ahorroTotal = ahorroUnit * cantidad;
+                await enviarPedido({ payment_intent_id: paymentIntent.id });
+            } catch (err) {
+                alert(err.message || 'No se pudo confirmar el pago.');
+            } finally {
+                btnConfirmar.disabled = false;
+            }
+        } else {
+            try {
+                await enviarPedido();
+            } catch (err) {
+                alert(err.message || 'Ha ocurrido un error al crear el pedido.');
+            }
+        }
+    });
 
-                const precioShow = p.precio_oferta ? `<span class="text-danger">${precioOferta.toFixed(2)} €</span> <small class="text-muted text-decoration-line-through">${precioOriginal.toFixed(2)} €</small>` : `${precioOriginal.toFixed(2)} €`;
-                const subtotalItem = (precioOferta * cantidad).toFixed(2);
-                const descuentoPorItem = ahorroUnit.toFixed(2);
-
-                return `
-                    <div class="producto-item d-flex justify-content-between align-items-center">
-                        <div class="mini-info">
-                            <strong>${p.nombre}</strong>
-                            <small>Color: ${p.color || '-'}, Talla: ${p.talla || '-'}</small>
-                            <small>${cantidad} x ${precioShow}</small>
-                            <div class="small text-muted">Precio original: ${precioOriginal.toFixed(2)} € · Precio con oferta: ${precioOferta.toFixed(2)} €</div>
-                            ${ahorroTotal > 0 ? `<div class="text-success small">Descuento por unidad: ${descuentoPorItem} € · Ahorro total: ${ahorroTotal.toFixed(2)} €</div>` : ''}
-                        </div>
-                        <div>
-                            <strong class="me-3">${subtotalItem} €</strong>
-                            <button class="btn btn-sm btn-outline-danger btn-eliminar-pedido" data-index="${index}">×</button>
-                        </div>
-                    </div>
-                `;
-            }).join('');
-
-            // Cálculos globales
-            const descuentoTotal = Math.max(0, subtotalOriginal - subtotalConOferta);
-            const precioConDescuento = subtotalConOferta; // ya incluye la oferta
-            const costeEnvio = precioConDescuento >= 50 ? 0 : 4.99;
-            const impuestos = +(precioConDescuento * 0.21).toFixed(2); // 21%
-            const total = +(precioConDescuento + costeEnvio + impuestos).toFixed(2);
-
-            // actualizar resumen en la UI (cliente)
-            elSubtotal.innerText = subtotalOriginal.toFixed(2) + ' €';
-            // mostrar descuento como valor positivo (cantidad ahorrada)
-            elDescuento.innerText = descuentoTotal.toFixed(2) + ' €';
-            elPrecioConDesc.innerText = precioConDescuento.toFixed(2) + ' €';
-            elCosteEnvio.innerText = costeEnvio.toFixed(2) + ' €';
-            elImpuestos.innerText = impuestos.toFixed(2) + ' €';
-            elTotal.innerText = total.toFixed(2) + ' €';
-
-            // añadir resumen final al DOM como bloque (reutilizamos la tarjeta de productos)
-            lista.innerHTML += `
-                <div class="producto-item d-flex justify-content-between align-items-center fw-bold fs-5 mt-3">
-                    <span>Total (pre-IVA y envío):</span>
-                    <span>${precioConDescuento.toFixed(2)} €</span>
-                </div>
-            `;
-        };
-
-        // ----------------- FUNCIONES DE MANIPULACIÓN -----------------
-        const eliminarProducto = (producto) => {
-            let carrito = obtenerCarrito();
-            // Usamos un identificador único para cada variante en el carrito
-            const idUnico = producto.id + '-' + (producto.color||'') + '-' + (producto.talla||'');
-            carrito = carrito.filter(p => (p.id + '-' + (p.color||'') + '-' + (p.talla||'')) !== idUnico);
-            guardarCarrito(carrito);
-            renderCarrito(); // Volver a pintar la lista
-        };
-
-        // ----------------- CONTROLES -----------------
-        document.addEventListener('click', (e) => {
-    if (e.target.matches('.btn-sumar-pedido')) {
-        const index = e.target.dataset.index;
-        const productos = obtenerCarrito();
-        incrementar(productos[index]);
-    }
-
-    if (e.target.matches('.btn-restar-pedido')) {
-        const index = e.target.dataset.index;
-        const productos = obtenerCarrito();
-        decrementar(productos[index]);
-    }
-
-    if (e.target.matches('.btn-eliminar-pedido')) {
-        const index = e.target.dataset.index;
-        const productos = obtenerCarrito();
-        eliminarProducto(productos[index]);
-
-    }
+    metodoPagoSelect.addEventListener('change', toggleCamposPago);
+    renderCarrito();
+    toggleCamposPago();
 });
-        
-        // ----------------- CARGAR AL ABRIR -----------------
-        window.onload = () => {
-            renderCarrito();
-
-            const metodoPagoSelect = document.getElementById('metodo_pago');
-            const tarjetaCampos = document.getElementById('tarjeta-campos');
-            const paypalCampos = document.getElementById('paypal-campos');
-
-            const toggleCamposPago = () => {
-                const v = metodoPagoSelect.value;
-                if (v === 'Tarjeta') {
-                    tarjetaCampos.style.display = 'block';
-                    paypalCampos.style.display = 'none';
-                    document.getElementById('numero_tarjeta').required = true;
-                    document.getElementById('fecha_expiracion').required = true;
-                    document.getElementById('cvc').required = true;
-                    document.getElementById('paypal_email').required = false;
-                } else if (v === 'PayPal') {
-                    tarjetaCampos.style.display = 'none';
-                    paypalCampos.style.display = 'block';
-                    document.getElementById('numero_tarjeta').required = false;
-                    document.getElementById('fecha_expiracion').required = false;
-                    document.getElementById('cvc').required = false;
-                    document.getElementById('paypal_email').required = true;
-                } else {
-                    tarjetaCampos.style.display = 'none';
-                    paypalCampos.style.display = 'none';
-                    document.getElementById('numero_tarjeta').required = false;
-                    document.getElementById('fecha_expiracion').required = false;
-                    document.getElementById('cvc').required = false;
-                    document.getElementById('paypal_email').required = false;
-                }
-            };
-
-            metodoPagoSelect.addEventListener('change', toggleCamposPago);
-
-            // Formateo automático del número de tarjeta: espacios cada 4 dígitos
-            const numeroTarjetaInput = document.getElementById('numero_tarjeta');
-            const fechaExpInput = document.getElementById('fecha_expiracion');
-            const cvcInput = document.getElementById('cvc');
-
-            const formatCardNumber = (value) => {
-                const digits = value.replace(/\D/g, '').slice(0,16); // máximo 16 dígitos
-                // insertar espacio cada 4
-                return digits.match(/.{1,4}/g)?.join(' ') || digits;
-            };
-
-            numeroTarjetaInput && numeroTarjetaInput.addEventListener('input', (ev) => {
-                const formatted = formatCardNumber(ev.target.value);
-                ev.target.value = formatted;
-            });
-
-            // Fecha expiración: formato MM/AA fijo, barra inserted después de 2 dígitos
-            const formatExpiry = (value) => {
-                const digits = value.replace(/\D/g, '').slice(0,4);
-                if (digits.length <= 2) return digits;
-                return digits.slice(0,2) + '/' + digits.slice(2);
-            };
-
-            fechaExpInput && fechaExpInput.addEventListener('input', (ev) => {
-                const formatted = formatExpiry(ev.target.value);
-                ev.target.value = formatted;
-            });
-
-            // CVC: solo dígitos, máximo 3
-            cvcInput && cvcInput.addEventListener('input', (ev) => {
-                ev.target.value = ev.target.value.replace(/\D/g, '').slice(0,3);
-            });
-        };
-        
-        // ----------------- ENVIAR PEDIDO -----------------
-        document.getElementById("form-pedido").addEventListener("submit", (e) => {
-            e.preventDefault(); // Evitamos que el formulario se envíe de la forma tradicional
-
-            const metodo = document.getElementById("metodo_pago").value;
-
-            // Calculamos totales básicos en el cliente para mostrar antes de enviar
-            const productos = obtenerCarrito();
-            let subtotal = 0;
-            let descuento = 0;
-            productos.forEach(p => {
-                const precioUnit = p.precio_oferta ? Number(p.precio_oferta) : Number(p.precio);
-                const cantidad = Number(p.cantidad || 1);
-                subtotal += precioUnit * cantidad;
-                if (p.precio_oferta) {
-                    descuento += (Number(p.precio) - Number(p.precio_oferta)) * cantidad;
-                }
-            });
-            // costeo de envío simple (cliente calcula; el servidor recalculará si hace falta)
-            let coste_envio = subtotal >= 50 ? 0 : 4.99;
-
-            const pedido = {
-                direccion_envio: document.getElementById("direccion_envio").value,
-                telefono: document.getElementById("telefono").value,
-                metodo_pago: document.getElementById("metodo_pago").value,
-                productos: productos, // Obtenemos los productos del localStorage
-                coste_envio: coste_envio
-            };
-
-            // Añadir campos según método
-            if (metodo === 'Tarjeta') {
-                const numero = document.getElementById('numero_tarjeta').value.replace(/\s+/g, '');
-                const fecha = document.getElementById('fecha_expiracion').value.trim();
-                const cvc = document.getElementById('cvc').value.trim();
-
-                if (!numero || !fecha || !cvc) {
-                    alert('Por favor completa los datos de la tarjeta.');
-                    return;
-                }
-
-                // Validación simple: longitud mínima del número y CVC de 3 dígitos
-                if (numero.length < 13 || numero.length > 16) {
-                    alert('Número de tarjeta inválido.');
-                    return;
-                }
-
-                if (cvc.length !== 3) {
-                    alert('CVC inválido. Debe tener 3 dígitos.');
-                    return;
-                }
-
-                pedido.tarjeta = { numero, fecha_expiracion: fecha, cvc };
-            }
-
-            if (metodo === 'PayPal') {
-                const paypalEmail = document.getElementById('paypal_email').value.trim();
-                if (!paypalEmail) {
-                    alert('Introduce el email de PayPal.');
-                    return;
-                }
-                pedido.paypal_email = paypalEmail;
-            }
-
-            // Enviamos los datos al backend
-            fetch("{% url 'confirmar_pedido' %}", {
-                method: "POST",
-                headers: {
-                    'Content-Type': 'application/json',
-                    // Si no usas @csrf_exempt, necesitarías enviar el token CSRF aquí
-                },
-                body: JSON.stringify(pedido)
-            })
-            .then(response => response.json())
-            .then(data => {
-                    if (data.error) {
-                        alert("Error al crear el pedido: " + data.error);
-                    } else {
-                        if (data.resumen) {
-                            const r = data.resumen;
-                            const items = data.items || [];
-
-                            // Actualizar el bloque de resumen con los valores del servidor (autoritativos)
-                            document.getElementById('res_subtotal').innerText = Number(r.subtotal).toFixed(2) + ' €';
-                            document.getElementById('res_descuento').innerText = Number(r.descuento).toFixed(2) + ' €';
-                            document.getElementById('res_precio_con_descuento').innerText = Number(r.subtotal - r.descuento).toFixed(2) + ' €';
-                            document.getElementById('res_coste_envio').innerText = Number(r.coste_envio).toFixed(2) + ' €';
-                            document.getElementById('res_impuestos').innerText = Number(r.impuestos).toFixed(2) + ' €';
-                            document.getElementById('res_total').innerText = Number(r.total).toFixed(2) + ' €';
-
-                            // Mostrar un resumen breve al usuario
-                            let msg = `Pedido creado (ID ${data.pedido_id})\n\nResumen:\n`;
-                            msg += `Subtotal: ${Number(r.subtotal).toFixed(2)} €\n`;
-                            msg += `Descuento: ${Number(r.descuento).toFixed(2)} €\n`;
-                            msg += `Coste envío: ${Number(r.coste_envio).toFixed(2)} €\n`;
-                            msg += `Impuestos: ${Number(r.impuestos).toFixed(2)} €\n`;
-                            msg += `TOTAL a pagar: ${Number(r.total).toFixed(2)} €\n\n`;
-                            msg += 'Detalle de productos:\n';
-                            items.forEach(it => {
-                                msg += `- ${it.nombre} (${it.color||'-'}, ${it.talla||'-'}) x${it.cantidad}: ${parseFloat(it.subtotal_item).toFixed(2)} €`;
-                                if (it.descuento_item && Number(it.descuento_item) > 0) {
-                                    msg += ` (Descuento: ${parseFloat(it.descuento_item).toFixed(2)} €)`;
-                                }
-                                msg += '\n';
-                            });
-
-                            alert(msg);
-                        } else {
-                            alert("¡Pedido realizado con éxito! ID del pedido: " + data.pedido_id);
-                        }
-
-                        vaciarCarrito(); // Limpiamos el carrito del localStorage
-                        window.location.href = "/"; // Redirigimos al inicio
-                    }
-            })
-            .catch(error => {
-                console.error("Error en la petición:", error);
-                alert("Ha ocurrido un error inesperado. Por favor, inténtalo de nuevo.");
-            });
-
-        });
-        </script>
-        
-</div>
+</script>
 {% endblock %}

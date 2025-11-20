@@ -62,6 +62,7 @@ python -m venv .venv
 pip install django
 pip install Pillow
 pip install python-dotenv
+pip install stripe
 
 # Generar migraciones (se creó 0002_alter_cliente_email_alter_producto_marca)
 python manage.py makemigrations
@@ -96,3 +97,8 @@ DEFAULT_FROM_EMAIL=no-reply@midominio.test
 ```
 
 MailerSend ofrece la información (host, puerto y credenciales SMTP) dentro de su panel bajo “SMTP credentials”. Ajusta el `DEFAULT_FROM_EMAIL` según la dirección que quieras que aparezca como remitente y no compartas las credenciales en el repositorio. Con estas variables cargadas, cada pedido exitoso dispara un correo que podrás ver en la bandeja de MailerSend o en el buzón real si usas producción.
+
+
+## Pasarela de pagos (Stripe)
+
+Usar tarjeta de prueba 4242 4242 4242 4242
