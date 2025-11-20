@@ -260,61 +260,6 @@ def confirmar_pedido(request):
     
     # Si el método es GET, simplemente renderiza la página
     return render(request, 'confirmar_pedido.html', {})
-    
-
-@login_required
-def gestionar_stock(request):
-    if not request.user.is_staff:
-        raise PermissionDenied("Necesitas permisos administrativos para acceder a esta sección.")
-
-    categorias = Categoria.objects.all()
-    variantes = list(VarianteProducto.objects.select_related('producto', 'producto__marca', 'producto__categoria').order_by('producto__nombre', 'color', 'talla'))
-    stock_por_producto = []
-
-    for producto, variantes_producto in groupby(variantes, key=lambda v: v.producto):
-        variantes_por_color = []
-        variantes_producto = list(variantes_producto)
-        for color, variantes_color in groupby(variantes_producto, key=lambda v: v.color):
-            variantes_por_color.append({
-                'color': color,
-                'variantes': list(variantes_color)
-            })
-        stock_por_producto.append({
-            'producto': producto,
-            'colores': variantes_por_color
-        })
-
-    if request.method == 'POST':
-        variante_id = request.POST.get('variante_id')
-        nuevo_stock = request.POST.get('stock')
-
-        if variante_id and nuevo_stock is not None:
-            try:
-                variante = VarianteProducto.objects.get(pk=variante_id)
-            except VarianteProducto.DoesNotExist:
-                messages.error(request, "La variante seleccionada no existe.")
-            else:
-                try:
-                    nuevo_valor = int(nuevo_stock)
-                    if nuevo_valor < 0:
-                        raise ValueError
-                    variante.stock = nuevo_valor
-                    variante.save()
-                    messages.success(
-                        request,
-                        f"Stock actualizado a {nuevo_valor} para {variante.producto.nombre} ({variante.talla})"
-                    )
-                    return redirect('gestionar_stock')
-                except ValueError:
-                    messages.error(request, "Introduce un número entero válido igual o mayor que cero.")
-        else:
-            messages.warning(request, "Selecciona una variante y un stock para actualizar.")
-
-    contexto = {
-        'stock_por_producto': stock_por_producto,
-        'categorias_navbar': categorias,
-    }
-    return render(request, 'admin_stock.html', contexto)
 
 
 @login_required

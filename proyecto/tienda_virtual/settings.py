@@ -35,6 +35,7 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = [
+    'jazzmin',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -142,3 +143,27 @@ EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', '')
 EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS', 'True').lower() in ('true', '1', 'yes')
 EMAIL_USE_SSL = os.getenv('EMAIL_USE_SSL', 'False').lower() in ('true', '1', 'yes')
 DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', 'no-reply@example.com')
+
+# Configuracion de Django Jazzmin
+JAZZMIN_SETTINGS = {
+    # Título a mostrar en la pestaña del navegador (por defecto es "Django admin")
+    "site_title": "Tienda Virtual Admin",
+
+    # Título en la cabecera del login y del panel
+    "site_header": "Tienda Virtual",
+
+    # Texto de la marca en la barra de navegación (normalmente el mismo que site_header)
+    "site_brand": "Tienda Virtual",
+
+    # Logo para la cabecera. La ruta debe ser relativa a la carpeta 'static'.
+    "site_logo": "img/logo.png",
+
+    # Texto a mostrar en la pantalla de login
+    "welcome_sign": "Bienvenido a la administración de la Tienda Virtual",
+
+    # Copyright en el footer
+    "copyright": "Tienda Virtual Ltd.",
+
+    # Tema visual. Puedes encontrar más en la documentación de Jazzmin.
+    "theme": "flatly",
+}
