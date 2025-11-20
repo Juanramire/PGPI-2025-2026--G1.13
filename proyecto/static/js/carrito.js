@@ -273,6 +273,11 @@ function renderCarrito(){
 // --- HELPERS ---
 const obtenerCarrito = () => JSON.parse(localStorage.getItem('carrito')) || [];
 const guardarCarrito = (productos) => localStorage.setItem('carrito', JSON.stringify(productos));
+const vaciarCarrito = () => {
+    localStorage.removeItem('carrito');
+    actualizarVistaCarrito();
+};
+window.vaciarCarrito = vaciarCarrito;
 
 // --- INICIALIZACIÓN ---
 document.addEventListener('DOMContentLoaded', actualizarVistaCarrito);

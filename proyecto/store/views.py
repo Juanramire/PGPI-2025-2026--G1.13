@@ -11,13 +11,15 @@ from django.contrib.auth import logout
 from .forms import ClienteRegistroForm
 from django.contrib import messages
 import json
-from django.views.decorators.csrf import csrf_exempt
 from django.db import transaction
 from datetime import datetime
 from decimal import Decimal, ROUND_HALF_UP
 from django.core.mail import send_mail
 from django.conf import settings
 import traceback
+import stripe
+
+stripe.api_key = getattr(settings, 'STRIPE_SECRET_KEY', '')
 """ def index(request):
     escaparates = Escaparate.objects.all()
     contexto={'escaparates':list(escaparates)}
@@ -100,31 +102,139 @@ def detalle_producto(request, id):
 
     return render(request, 'detalle_producto.html', contexto)
 
-@csrf_exempt # Usar con precaución. Idealmente, se configuraría el envío de token CSRF desde JS.
+def calcular_resumen_pedido(productos_carrito, coste_envio_override=None):
+    subtotal_pedido = Decimal('0.00')
+    subtotal_original = Decimal('0.00')
+    descuento_total = Decimal('0.00')
+
+    for item_data in productos_carrito:
+        producto_id = item_data.get('id')
+        if producto_id is None:
+            raise ValueError('Producto sin identificador (id)')
+
+        producto = Producto.objects.get(pk=producto_id)
+        cantidad = int(item_data.get('cantidad', 1) or 1)
+
+        precio_original = Decimal(str(producto.precio))
+        precio_unitario = Decimal(str(producto.precio_oferta)) if producto.precio_oferta is not None else precio_original
+
+        subtotal_original += (precio_original * cantidad)
+        subtotal_pedido += (precio_unitario * cantidad)
+        descuento_total += (precio_original - precio_unitario) * cantidad
+
+    subtotal_pedido = subtotal_pedido.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+    subtotal_original = subtotal_original.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+    descuento_total = descuento_total.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+
+    if coste_envio_override is not None:
+        coste_envio = Decimal(str(coste_envio_override))
+    else:
+        umbral_envio_gratis = Decimal('50.00')
+        coste_envio = Decimal('0.00') if subtotal_pedido >= umbral_envio_gratis else Decimal('4.99')
+
+    coste_envio = coste_envio.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+    base_imponible = (subtotal_pedido - descuento_total).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+    impuesto_rate = Decimal('0.21')
+    impuestos = (base_imponible * impuesto_rate).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+    total = (base_imponible + impuestos + coste_envio).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+
+    return {
+        'subtotal': subtotal_pedido,
+        'subtotal_original': subtotal_original,
+        'descuento': descuento_total,
+        'coste_envio': coste_envio,
+        'impuestos': impuestos,
+        'total': total,
+    }
+
+def crear_payment_intent(request):
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Método no permitido'}, status=405)
+
+    if not request.user.is_authenticated:
+        return JsonResponse({'error': 'Usuario no autenticado'}, status=401)
+
+    if not settings.STRIPE_SECRET_KEY:
+        return JsonResponse({'error': 'Stripe no está configurado'}, status=500)
+
+    try:
+        data = json.loads(request.body)
+        productos_carrito = data.get('productos', [])
+        if not productos_carrito:
+            return JsonResponse({'error': 'El carrito está vacío'}, status=400)
+
+        resumen = calcular_resumen_pedido(productos_carrito, data.get('coste_envio'))
+        total_cents = int((resumen['total'] * Decimal('100')).quantize(Decimal('1'), rounding=ROUND_HALF_UP))
+        intent = stripe.PaymentIntent.create(
+            amount=total_cents,
+            currency='eur',
+            payment_method_types=['card'],
+            metadata={
+                'cliente_id': request.user.id,
+                'correo': request.user.email,
+            }
+        )
+
+        resumen_str = {key: str(value) for key, value in resumen.items()}
+        return JsonResponse({
+            'client_secret': intent.client_secret,
+            'payment_intent_id': intent.id,
+            'resumen': resumen_str
+        })
+    except stripe.error.StripeError as stripe_err:
+        return JsonResponse({'error': str(stripe_err)}, status=400)
+    except Exception as exc:
+        return JsonResponse({'error': str(exc)}, status=400)
+
+
 def confirmar_pedido(request):
     if request.method == 'POST':
-        # 1. Validar que el usuario esté autenticado
         if not request.user.is_authenticated:
             return JsonResponse({'error': 'Usuario no autenticado'}, status=401)
 
-        pedido = None # Declaramos la variable pedido aquí
-
         try:
-            # 2. Cargar los datos enviados desde el frontend
             data = json.loads(request.body)
             productos_carrito = data.get('productos', [])
-            
             if not productos_carrito:
                 return JsonResponse({'error': 'El carrito está vacío'}, status=400)
 
-            # 3. Usar una transacción para asegurar la integridad de los datos
+            metodo_pago = data.get('metodo_pago')
+            if metodo_pago == 'PayPal':
+                paypal_email = data.get('paypal_email')
+                if not paypal_email:
+                    return JsonResponse({'error': 'Introduce el email de PayPal.'}, status=400)
+
+            resumen = calcular_resumen_pedido(productos_carrito, data.get('coste_envio'))
+
+            if metodo_pago == 'Tarjeta':
+                if not settings.STRIPE_SECRET_KEY:
+                    return JsonResponse({'error': 'Stripe no está configurado'}, status=500)
+
+                payment_intent_id = data.get('payment_intent_id')
+                if not payment_intent_id:
+                    return JsonResponse({'error': 'Falta el identificador del pago.'}, status=400)
+
+                try:
+                    intent = stripe.PaymentIntent.retrieve(payment_intent_id)
+                except stripe.error.StripeError as err:
+                    return JsonResponse({'error': str(err)}, status=400)
+
+                if intent.status != 'succeeded':
+                    return JsonResponse({'error': 'El pago aún no ha sido confirmado.'}, status=400)
+
+                importe_intent = (Decimal(intent.amount) / Decimal('100')).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+                if importe_intent != resumen['total']:
+                    return JsonResponse({'error': 'El importe cargado no coincide con el total del pedido.'}, status=400)
+
+            pedido = None
+            items_response = []
+
             with transaction.atomic():
-                # 4. Crear el objeto Pedido principal (inicializamos totales a 0)
                 pedido = Pedido.objects.create(
                     cliente=request.user,
                     direccion_envio=data.get('direccion_envio'),
                     telefono=data.get('telefono'),
-                    metodo_pago=data.get('metodo_pago'),
+                    metodo_pago=metodo_pago,
                     subtotal=Decimal('0.00'),
                     total=Decimal('0.00'),
                     impuestos=Decimal('0.00'),
@@ -132,15 +242,9 @@ def confirmar_pedido(request):
                     descuento=Decimal('0.00')
                 )
 
-                # Generar un número de pedido único y guardarlo
                 pedido.numero_pedido = f"PED-{pedido.id}-{datetime.now().strftime('%Y%m%d%H%M%S')}"
                 pedido.save()
 
-                subtotal_pedido = Decimal('0.00')
-                descuento_total = Decimal('0.00')
-                items_response = []
-
-                # 5. Iterar sobre los productos del carrito para crear los Items del Pedido
                 for item_data in productos_carrito:
                     producto_id = item_data.get('id')
                     if producto_id is None:
@@ -171,15 +275,9 @@ def confirmar_pedido(request):
                     precio_unitario = Decimal(precio_unitario)
 
                     total_item = (precio_unitario * Decimal(cantidad)).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
-                    subtotal_pedido += total_item
 
-                    descuento_item = Decimal('0.00')
-                    if producto.precio_oferta is not None:
-                        descuento_item = (Decimal(producto.precio) - Decimal(producto.precio_oferta)) * Decimal(cantidad)
-                        descuento_item = descuento_item.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
-                        descuento_total += descuento_item
-                    imagen=item_data.get('imagen')
-                    texto=item_data.get('texto')
+                    imagen = item_data.get('imagen')
+                    texto = item_data.get('texto')
                     ItemPedido.objects.create(
                         pedido=pedido,
                         producto=producto,
@@ -192,6 +290,11 @@ def confirmar_pedido(request):
                         imagen=imagen
                     )
 
+                    descuento_item = Decimal('0.00')
+                    if producto.precio_oferta is not None:
+                        descuento_item_calc = (Decimal(producto.precio) - Decimal(producto.precio_oferta)) * Decimal(cantidad)
+                        descuento_item = descuento_item_calc.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+
                     items_response.append({
                         'producto_id': producto.id,
                         'nombre': producto.nombre,
@@ -203,43 +306,23 @@ def confirmar_pedido(request):
                         'descuento_item': str(descuento_item)
                     })
 
-                # 6. Cálculo de envío/impuestos
-                coste_envio = Decimal(str(data.get('coste_envio'))) if data.get('coste_envio') is not None else Decimal('4.99')
-                umbral_envio_gratis = Decimal('50.00')
-                if subtotal_pedido >= umbral_envio_gratis:
-                    coste_envio = Decimal('0.00')
-
-                base_imponible = (subtotal_pedido - descuento_total).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
-                impuesto_rate = Decimal('0.21')
-                impuestos = (base_imponible * impuesto_rate).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
-
-                total_pedido = (base_imponible + impuestos + coste_envio).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
-
-                # 7. Guardar totales
-                pedido.subtotal = subtotal_pedido
-                pedido.descuento = descuento_total
-                pedido.coste_entrega = coste_envio
-                pedido.impuestos = impuestos
-                pedido.total = total_pedido
+                pedido.subtotal = resumen['subtotal']
+                pedido.descuento = resumen['descuento']
+                pedido.coste_entrega = resumen['coste_envio']
+                pedido.impuestos = resumen['impuestos']
+                pedido.total = resumen['total']
                 pedido.save()
 
-                resumen = {
-                    'subtotal': str(subtotal_pedido),
-                    'descuento': str(descuento_total),
-                    'coste_envio': str(coste_envio),
-                    'impuestos': str(impuestos),
-                    'total': str(total_pedido)
-                }
+                resumen_str = {key: str(value) for key, value in resumen.items()}
 
-                # 8. Enviar correo de confirmación (no bloqueante)
                 try:
                     subject = f"Confirmación pedido {pedido.numero_pedido}"
                     lines = [f"Pedido: {pedido.numero_pedido}", "", "Resumen:"]
-                    lines.append(f"Subtotal: {resumen['subtotal']} €")
-                    lines.append(f"Descuento: {resumen['descuento']} €")
-                    lines.append(f"Coste envío: {resumen['coste_envio']} €")
-                    lines.append(f"Impuestos: {resumen['impuestos']} €")
-                    lines.append(f"Total: {resumen['total']} €")
+                    lines.append(f"Subtotal: {resumen_str['subtotal']} €")
+                    lines.append(f"Descuento: {resumen_str['descuento']} €")
+                    lines.append(f"Coste envío: {resumen_str['coste_envio']} €")
+                    lines.append(f"Impuestos: {resumen_str['impuestos']} €")
+                    lines.append(f"Total: {resumen_str['total']} €")
                     lines.append("")
                     lines.append("Productos:")
                     for it in items_response:
@@ -248,19 +331,25 @@ def confirmar_pedido(request):
                     from_email = getattr(settings, 'DEFAULT_FROM_EMAIL', None) or 'no-reply@example.com'
                     send_mail(subject, message, from_email, [request.user.email], fail_silently=False)
                 except Exception as e:
-                    # Imprimimos el error para depuración pero no detenemos la creación del pedido
                     print('Error enviando email de confirmación:', e)
                     traceback.print_exc()
 
         except Exception as e:
             return JsonResponse({'error': str(e)}, status=400)
 
-        # 9. Si todo fue bien, devolver una respuesta de éxito con desglose
-        return JsonResponse({'mensaje': 'Pedido creado con éxito', 'pedido_id': pedido.id, 'items': items_response, 'resumen': resumen})
-    
-    # Si el método es GET, simplemente renderiza la página
-    return render(request, 'confirmar_pedido.html', {})
-    
+        return JsonResponse({
+            'mensaje': 'Pedido creado con éxito',
+            'pedido_id': pedido.id,
+            'items': items_response,
+            'resumen': resumen_str
+        })
+
+    categorias = Categoria.objects.all()
+    return render(request, 'confirmar_pedido.html', {
+        'stripe_publishable_key': settings.STRIPE_PUBLISHABLE_KEY,
+        'categorias_navbar': categorias,
+    })
+
 
 @login_required
 def gestionar_stock(request):
