@@ -337,11 +337,18 @@ def confirmar_pedido(request):
         except Exception as e:
             return JsonResponse({'error': str(e)}, status=400)
 
-        # 9. Si todo fue bien, devolver una respuesta de éxito con desglose
-        return JsonResponse({'mensaje': 'Pedido creado con éxito', 'pedido_id': pedido.id, 'items': items_response, 'resumen': resumen})
-    
-    # Si el método es GET, simplemente renderiza la página
-    return render(request, 'confirmar_pedido.html', {})
+        return JsonResponse({
+            'mensaje': 'Pedido creado con éxito',
+            'pedido_id': pedido.id,
+            'items': items_response,
+            'resumen': resumen_str
+        })
+
+    categorias = Categoria.objects.all()
+    return render(request, 'confirmar_pedido.html', {
+        'stripe_publishable_key': settings.STRIPE_PUBLISHABLE_KEY,
+        'categorias_navbar': categorias,
+    })
 
 @login_required
 def mis_pedidos(request):
