@@ -62,6 +62,7 @@ python -m venv .venv
 pip install django
 pip install Pillow
 pip install python-dotenv
+pip install django-jazzmin
 pip install stripe
 
 # Generar migraciones (se creó 0002_alter_cliente_email_alter_producto_marca)
