@@ -65,7 +65,17 @@
 
             <form id="form-pedido" >
                 {% csrf_token %}
-                
+                {% if not user.is_authenticated %}
+                 <div class="mb-3">
+                    <label class="form-label">Nombre</label>
+                    <input type="text" class="form-control" id="nombre" name="nombre" required>
+                  </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Email</label>
+                    <input type="email" class="form-control" id="email" name="email" required>
+                </div>
+                {% endif %}
                 <div class="mb-3">
                     <label class="form-label">Dirección de Envío</label>
                     <input type="text" class="form-control" id="direccion_envio" required>
@@ -75,7 +85,7 @@
                     <label class="form-label">Teléfono</label>
                     <input type="text" class="form-control" id="telefono" required>
                 </div>
-
+                
                 <div class="mb-3">
                     <label class="form-label">Método de Pago</label>
                     <select class="form-select" id="metodo_pago" required>
@@ -370,7 +380,18 @@ document.addEventListener('DOMContentLoaded', () => {
             coste_envio: ultimoResumenCliente.coste_envio,
             ...extra
         };
+        {% if not user.is_authenticated %}
+    const nombre = document.getElementById('nombre').value.trim();
+    const email = document.getElementById('email').value.trim();
 
+    if (!nombre || !email) {
+        alert('Debes completar nombre y email.');
+        return;
+    }
+
+    payload.nombre = nombre;
+    payload.email = email;
+    {% endif %}
         if (metodo === 'PayPal') {
             const paypalEmail = document.getElementById('paypal_email').value.trim();
             if (!paypalEmail) {
