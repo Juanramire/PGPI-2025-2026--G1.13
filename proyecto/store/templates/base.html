@@ -56,11 +56,12 @@
                     <li class="nav-item">
                         <a class="nav-link" href="{% url 'admin:index' %}">Administrar stock</a>
                     </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'mis_pedidos' %}">Pedidos</a>
+                    </li>
+                {% elif user.is_authenticated %}
+                    <li class="nav-item"><a class="nav-link" href="{% url 'mis_pedidos' %}">Pedidos</a></li>
                 {% endif %}
-                <li class="nav-item">
-                    <a class="nav-link" href="{% url 'mis_pedidos' %}">Pedidos</a>
-                </li>
-
                 <li class="nav-item ms-3">
                     <button
                         class="btn btn-warning dropdown-toggle"
