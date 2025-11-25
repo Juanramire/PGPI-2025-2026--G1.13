@@ -82,6 +82,14 @@ Tras ejecutar `runserver`, el proyecto queda disponible en `http://127.0.0.1:800
 - La página principal (`/`) muestra el catálogo de productos, con soporte para filtrar por nombre usando la query `?nombre=...`.  
 - La autenticación se maneja a través de `/login/`, `/logout/` y `/register/`.
 
+## Despliegue en Render con Docker
+
+- Construir la imagen: `docker build -t tienda-virtual .`
+- Ejecutar localmente: `docker run -p 8000:8000 -e PORT=8000 -e ALLOWED_HOSTS=* tienda-virtual`
+- El entrypoint aplica migraciones, carga `store/fixtures/datos.json`, ejecuta `collectstatic` y crea el admin (`admin@gmail.com` / usuario `admin` / contraseña `admin`).
+- Render inyecta `PORT`; opcionalmente puedes definir `DEBUG`, `ALLOWED_HOSTS` y `CSRF_TRUSTED_ORIGINS` como variables de entorno.
+- La aplicación se levanta con `python manage.py runserver 0.0.0.0:$PORT` si no se pasa otro comando al contenedor.
+
 ## Envío de correos de confirmación
 
 Al confirmar un pedido el backend usa las variables de entorno para configurar el backend SMTP y enviar un `send_mail` al correo del usuario. Ya que `settings.py` carga `.env` con `python-dotenv`, basta con definir allí estos valores antes de arrancar `runserver`:

@@ -24,12 +24,13 @@ load_dotenv(BASE_DIR / '.env')
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-kv!%czpq^*53oe0p)*1ymsqr$g%laj=4m#g4dl&=4*njs99h1e'
+SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-kv!%czpq^*53oe0p)*1ymsqr$g%laj=4m#g4dl&=4*njs99h1e')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.getenv('DEBUG', 'True').lower() in ('true', '1', 'yes')
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [host for host in os.getenv('ALLOWED_HOSTS', '*').split(',') if host]
+CSRF_TRUSTED_ORIGINS = [origin for origin in os.getenv('CSRF_TRUSTED_ORIGINS', '').split(',') if origin]
 
 
 # Application definition
@@ -124,6 +125,7 @@ STATIC_URL = 'static/'
 
 import os
 STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
+STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 # Media files (Uploaded images)
 MEDIA_URL = '/media/'
