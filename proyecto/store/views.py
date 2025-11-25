@@ -151,9 +151,6 @@ def crear_payment_intent(request):
     if request.method != 'POST':
         return JsonResponse({'error': 'Método no permitido'}, status=405)
 
-    if not request.user.is_authenticated:
-        return JsonResponse({'error': 'Usuario no autenticado'}, status=401)
-
     if not settings.STRIPE_SECRET_KEY:
         return JsonResponse({'error': 'Stripe no está configurado'}, status=500)
 
@@ -171,7 +168,6 @@ def crear_payment_intent(request):
             payment_method_types=['card'],
             metadata={
                 'cliente_id': request.user.id,
-                'correo': request.user.email,
             }
         )
 
