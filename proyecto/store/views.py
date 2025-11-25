@@ -188,12 +188,14 @@ def crear_payment_intent(request):
 
 
 def confirmar_pedido(request):
+    
     if request.method == 'POST':
-        if not request.user.is_authenticated:
+        data = json.loads(request.body)
+        if not request.user.is_authenticated and data.get('email') is None and data.get('nombre'):
             return JsonResponse({'error': 'Usuario no autenticado'}, status=401)
 
         try:
-            data = json.loads(request.body)
+            
             productos_carrito = data.get('productos', [])
             if not productos_carrito:
                 return JsonResponse({'error': 'El carrito está vacío'}, status=400)
@@ -227,7 +229,8 @@ def confirmar_pedido(request):
 
             with transaction.atomic():
                 pedido = Pedido.objects.create(
-                    cliente=request.user,
+                    email=request.user.email if request.user.is_authenticated else data.get('email'),
+                    nombre=f'{request.user.first_name} {request.user.last_name}' if request.user.is_authenticated else data.get('nombre'),
                     direccion_envio=data.get('direccion_envio'),
                     telefono=data.get('telefono'),
                     metodo_pago=metodo_pago,
@@ -325,7 +328,7 @@ def confirmar_pedido(request):
                         lines.append(f"- {it['nombre']} ({it['color']}, {it['talla']}) x{it['cantidad']}: {it['subtotal_item']} €")
                     message = "\n".join(lines)
                     from_email = getattr(settings, 'DEFAULT_FROM_EMAIL', None) or 'no-reply@example.com'
-                    send_mail(subject, message, from_email, [request.user.email], fail_silently=False)
+                    send_mail(subject, message, from_email, [request.user.email if request.user.is_authenticated else data.get('email')], fail_silently=False)
                 except Exception as e:
                     print('Error enviando email de confirmación:', e)
                     traceback.print_exc()
@@ -348,7 +351,7 @@ def confirmar_pedido(request):
 
 @login_required
 def mis_pedidos(request):
-    pedidos = request.user.pedidos.all().order_by('-fecha_creacion')
+    pedidos = Pedido.objects.filter(email=request.user.email).order_by('-fecha_creacion')
     return render(request, "pedidos.html", {"pedidos": pedidos})
 @login_required
 def detalle_pedido(request, pedido_id):

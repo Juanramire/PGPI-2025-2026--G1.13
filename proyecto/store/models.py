@@ -87,8 +87,9 @@ class Cliente(AbstractUser):
         return self.email
 
 class Pedido(models.Model):
-    # Relación de 'uno a muchos': Un cliente puede tener muchos pedidos.
-    cliente = models.ForeignKey(Cliente, on_delete=models.CASCADE, related_name='pedidos')
+    
+    email = models.EmailField()
+    nombre= models.TextField()
     fecha_creacion = models.DateTimeField(auto_now_add=True)
     numero_pedido = models.CharField(max_length=50, unique=True)
     
