@@ -312,12 +312,22 @@ def confirmar_pedido(request):
 
                 try:
                     subject = f"Confirmación pedido {pedido.numero_pedido}"
-                    lines = [f"Pedido: {pedido.numero_pedido}", "", "Resumen:"]
+                    
+
+                    lines = []
+                    lines.append(f"Estimado/a {f'{request.user.first_name} {request.user.last_name}' if request.user.is_authenticated else data.get('nombre')}")
+                    lines.append("Gracias por tu compra en 3J2A. Nos complace informarte que hemos recibido tu pedido con éxito. A continuación, te proporcionamos los detalles completos de tu compra:")
+                    lines.append(f"Pedido: {pedido.numero_pedido}")
+                    lines.append('')
+                    lines.append(f"Dirección de entrega: {data.get('direccion_envio')}")
+                    lines.append('')
                     lines.append(f"Subtotal: {resumen_str['subtotal']} €")
                     lines.append(f"Descuento: {resumen_str['descuento']} €")
                     lines.append(f"Coste envío: {resumen_str['coste_envio']} €")
                     lines.append(f"Impuestos: {resumen_str['impuestos']} €")
+                    
                     lines.append(f"Total: {resumen_str['total']} €")
+                    
                     lines.append("")
                     lines.append("Productos:")
                     for it in items_response:
