@@ -78,11 +78,7 @@
 
                 <div class="mb-3">
                     <label class="form-label">Método de Pago</label>
-                    <select class="form-select" id="metodo_pago" required>
-                        <option value="">Seleccione...</option>
-                        <option value="Tarjeta">Tarjeta de Crédito/Débito</option>
-                        <option value="PayPal">PayPal</option>
-                    </select>
+                    <p class="form-control-plaintext"><strong>Tarjeta de Crédito/Débito</strong></p>
                 </div>
 
                 <div id="stripe-element-wrapper" class="mb-3 border rounded p-3" style="display:none;background:#f8f9fa;">
@@ -90,16 +86,6 @@
                     <div id="payment-element"></div>
                     <div id="payment-message" class="text-danger mt-2" role="alert"></div>
                     <small class="text-muted d-block">Los datos de la tarjeta se tokenizan directamente en Stripe. Nosotros no almacenamos la tarjeta.</small>
-                </div>
-
-                <!-- CAMPOS PAYPAL -->                <!-- CAMPOS PAYPAL -->
-                <div id="paypal-campos" class="mb-3 border rounded p-3" style="display:none;background:#f8f9fa;">
-                    <h6 class="mb-2">Pagar con PayPal</h6>
-                    <div class="mb-2">
-                        <label class="form-label">Email de PayPal</label>
-                        <input type="email" class="form-control" id="paypal_email" placeholder="email@ejemplo.com">
-                    </div>
-                    <small class="text-muted">Al seleccionar PayPal, el pago se procesará a través de PayPal (si está integrado) o te redirigiremos al flujo correspondiente.</small>
                 </div>
 
                 <button id="btn-confirmar" class="btn btn-primary w-100 mt-3" type="submit">Confirmar Pedido</button>
@@ -124,8 +110,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const elCosteEnvio = document.getElementById('res_coste_envio');
     const elImpuestos = document.getElementById('res_impuestos');
     const elTotal = document.getElementById('res_total');
-    const metodoPagoSelect = document.getElementById('metodo_pago');
-    const paypalCampos = document.getElementById('paypal-campos');
     const stripeWrapper = document.getElementById('stripe-element-wrapper');
     const paymentMessageEl = document.getElementById('payment-message');
     const btnConfirmar = document.getElementById('btn-confirmar');
@@ -268,20 +252,8 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     const toggleCamposPago = () => {
-        const valor = metodoPagoSelect.value;
-        if (valor === 'Tarjeta') {
-            stripeWrapper.style.display = 'block';
-            paypalCampos.style.display = 'none';
-            prepararStripePago();
-        } else if (valor === 'PayPal') {
-            stripeWrapper.style.display = 'none';
-            paypalCampos.style.display = 'block';
-            invalidarStripeIntent();
-        } else {
-            stripeWrapper.style.display = 'none';
-            paypalCampos.style.display = 'none';
-            invalidarStripeIntent();
-        }
+        stripeWrapper.style.display = 'block';
+        prepararStripePago();
     };
 
     const prepararStripePago = async () => {
@@ -348,7 +320,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const enviarPedido = async (extra = {}) => {
         const productos = obtenerCarrito();
-        const metodo = metodoPagoSelect.value;
+        const metodo = 'Tarjeta'; // Método de pago fijo
         const direccion = document.getElementById('direccion_envio').value.trim();
         const telefono = document.getElementById('telefono').value.trim();
 
@@ -370,15 +342,6 @@ document.addEventListener('DOMContentLoaded', () => {
             coste_envio: ultimoResumenCliente.coste_envio,
             ...extra
         };
-
-        if (metodo === 'PayPal') {
-            const paypalEmail = document.getElementById('paypal_email').value.trim();
-            if (!paypalEmail) {
-                alert('Introduce el email de PayPal.');
-                return;
-            }
-            payload.paypal_email = paypalEmail;
-        }
 
         const response = await fetch("{% url 'confirmar_pedido' %}", {
             method: 'POST',
@@ -422,58 +385,43 @@ document.addEventListener('DOMContentLoaded', () => {
 
     formPedido.addEventListener('submit', async (event) => {
         event.preventDefault();
-        const metodo = metodoPagoSelect.value;
-        if (!metodo) {
-            alert('Selecciona un método de pago.');
+        if (!stripeInstance) {
+            alert('Stripe no está disponible en este momento.');
+            return;
+        }
+        await prepararStripePago();
+        if (!stripeClientSecret || !stripeElements) {
             return;
         }
 
-        if (metodo === 'Tarjeta') {
-            if (!stripeInstance) {
-                alert('Stripe no está disponible en este momento.');
+        btnConfirmar.disabled = true;
+        try {
+            const { error, paymentIntent } = await stripeInstance.confirmPayment({
+                elements: stripeElements,
+                confirmParams: {
+                    return_url: window.location.href
+                },
+                redirect: 'if_required'
+            });
+
+            if (error) {
+                if (paymentMessageEl) paymentMessageEl.textContent = error.message;
                 return;
             }
-            await prepararStripePago();
-            if (!stripeClientSecret || !stripeElements) {
+
+            if (!paymentIntent || paymentIntent.status !== 'succeeded') {
+                if (paymentMessageEl) paymentMessageEl.textContent = 'No se pudo completar el pago.';
                 return;
             }
 
-            btnConfirmar.disabled = true;
-            try {
-                const { error, paymentIntent } = await stripeInstance.confirmPayment({
-                    elements: stripeElements,
-                    confirmParams: {
-                        return_url: window.location.href
-                    },
-                    redirect: 'if_required'
-                });
-
-                if (error) {
-                    if (paymentMessageEl) paymentMessageEl.textContent = error.message;
-                    return;
-                }
-
-                if (!paymentIntent || paymentIntent.status !== 'succeeded') {
-                    if (paymentMessageEl) paymentMessageEl.textContent = 'No se pudo completar el pago.';
-                    return;
-                }
-
-                await enviarPedido({ payment_intent_id: paymentIntent.id });
-            } catch (err) {
-                alert(err.message || 'No se pudo confirmar el pago.');
-            } finally {
-                btnConfirmar.disabled = false;
-            }
-        } else {
-            try {
-                await enviarPedido();
-            } catch (err) {
-                alert(err.message || 'Ha ocurrido un error al crear el pedido.');
-            }
+            await enviarPedido({ payment_intent_id: paymentIntent.id });
+        } catch (err) {
+            alert(err.message || 'No se pudo confirmar el pago.');
+        } finally {
+            btnConfirmar.disabled = false;
         }
     });
 
-    metodoPagoSelect.addEventListener('change', toggleCamposPago);
     renderCarrito();
     toggleCamposPago();
 });

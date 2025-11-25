@@ -199,10 +199,6 @@ def confirmar_pedido(request):
                 return JsonResponse({'error': 'El carrito está vacío'}, status=400)
 
             metodo_pago = data.get('metodo_pago')
-            if metodo_pago == 'PayPal':
-                paypal_email = data.get('paypal_email')
-                if not paypal_email:
-                    return JsonResponse({'error': 'Introduce el email de PayPal.'}, status=400)
 
             resumen = calcular_resumen_pedido(productos_carrito, data.get('coste_envio'))
 

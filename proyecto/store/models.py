@@ -109,9 +109,6 @@ class Pedido(models.Model):
     
     METODO_PAGO_CHOICES = [
         ('Tarjeta', 'Tarjeta de Crédito/Débito'),
-        ('PayPal', 'PayPal'),
-        ('Transferencia', 'Transferencia Bancaria'),
-        ('Efectivo', 'Efectivo (Contra Entrega)'),
     ]
     metodo_pago = models.CharField(max_length=50, choices=METODO_PAGO_CHOICES)
     
