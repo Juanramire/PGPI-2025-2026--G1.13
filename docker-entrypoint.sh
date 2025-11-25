@@ -2,7 +2,7 @@
 set -e
 
 # Entrypoint script to prepare the Django app before serving requests.
-
+python manage.py makemigrations
 python manage.py migrate --noinput
 python manage.py loaddata store/fixtures/datos.json
 
