@@ -18,7 +18,9 @@ from django.core.mail import send_mail
 from django.conf import settings
 import traceback
 import stripe
-
+from sendgrid import SendGridAPIClient
+from sendgrid.helpers.mail import Mail
+import os
 stripe.api_key = getattr(settings, 'STRIPE_SECRET_KEY', '')
 """ def index(request):
     escaparates = Escaparate.objects.all()
@@ -219,7 +221,7 @@ def confirmar_pedido(request):
                 importe_intent = (Decimal(intent.amount) / Decimal('100')).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
                 if importe_intent != resumen['total']:
                     return JsonResponse({'error': 'El importe cargado no coincide con el total del pedido.'}, status=400)
-
+            
             pedido = None
             items_response = []
 
@@ -334,7 +336,15 @@ def confirmar_pedido(request):
                         lines.append(f"- {it['nombre']} ({it['color']}, {it['talla']}) x{it['cantidad']}: {it['subtotal_item']} €")
                     message = "\n".join(lines)
                     from_email = getattr(settings, 'DEFAULT_FROM_EMAIL', None) or 'no-reply@example.com'
-                    send_mail(subject, message, from_email, [request.user.email if request.user.is_authenticated else data.get('email')], fail_silently=False)
+                    #send_mail(subject, message, from_email, [request.user.email if request.user.is_authenticated else data.get('email')], fail_silently=False)
+                    email = Mail(
+                            from_email=f"3j2a <{from_email}>",
+                            to_emails=[request.user.email if request.user.is_authenticated else data.get('email')],
+                            subject=subject,
+                            plain_text_content=message
+                        )
+                    sg = SendGridAPIClient(os.getenv("EMAIL_HOST_PASSWORD"))
+                    sg.send(email)
                 except Exception as e:
                     print('Error enviando email de confirmación:', e)
                     traceback.print_exc()
