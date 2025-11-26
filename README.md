@@ -64,6 +64,7 @@ pip install Pillow
 pip install python-dotenv
 pip install django-jazzmin
 pip install stripe
+pip install sendgrid
 
 # Generar migraciones (se creó 0002_alter_cliente_email_alter_producto_marca)
 python manage.py makemigrations

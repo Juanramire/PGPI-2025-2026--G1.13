@@ -117,7 +117,7 @@ class Pedido(models.Model):
     telefono = models.CharField(max_length=20, blank=True, null=True)
 
     def __str__(self):
-        return f"Pedido N° {self.numero_pedido} de {self.cliente.username}"
+        return f"Pedido N° {self.numero_pedido}"
 
 class ItemPedido(models.Model):
     # Relación de 'uno a muchos': Un pedido tiene múltiples ítems.

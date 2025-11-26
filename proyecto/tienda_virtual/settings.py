@@ -170,4 +170,10 @@ JAZZMIN_SETTINGS = {
 
     # Tema visual. Puedes encontrar más en la documentación de Jazzmin.
     "theme": "flatly",
+
+    # Links en la parte superior del menú
+    "topmenu_links": [
+        # Link a la página principal de la tienda
+        {"name": "Volver a la tienda", "url": "/"},
+    ],
 }
