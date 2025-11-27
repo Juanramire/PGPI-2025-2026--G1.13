@@ -371,5 +371,5 @@ def mis_pedidos(request):
     return render(request, "pedidos.html", {"pedidos": pedidos})
 @login_required
 def detalle_pedido(request, pedido_id):
-    pedido = get_object_or_404(Pedido, id=pedido_id, cliente=request.user)
+    pedido = get_object_or_404(Pedido, id=pedido_id, email=request.user.email)
     return render(request, "detalle_pedido.html", {"pedido": pedido})

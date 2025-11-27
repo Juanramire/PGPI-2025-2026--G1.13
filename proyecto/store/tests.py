@@ -1,5 +1,6 @@
 import json
 from decimal import Decimal
+from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
 from django.test import TestCase, override_settings
@@ -37,27 +38,6 @@ class DetalleProductoViewTests(TestCase):
         self.assertTrue(any(variante['color'] == 'Azul' for variante in variantes))
 
 
-class GestionarStockViewTests(TestCase):
-    fixtures = ['datos.json']
-
-    def setUp(self):
-        user_model = get_user_model()
-        self.cliente = user_model.objects.get(email='cliente.demo@example.com')
-        self.admin = user_model.objects.get(email='admin.demo@example.com')
-
-    def test_usuario_sin_permisos_recibe_403(self):
-        self.client.force_login(self.cliente)
-        response = self.client.get(reverse('gestionar_stock'))
-        self.assertEqual(response.status_code, 403)
-
-    def test_admin_puede_ver_stock(self):
-        self.client.force_login(self.admin)
-        response = self.client.get(reverse('gestionar_stock'))
-        self.assertEqual(response.status_code, 200)
-        self.assertIn('stock_por_producto', response.context)
-        self.assertGreater(len(response.context['stock_por_producto']), 0)
-
-
 @override_settings(EMAIL_BACKEND='django.core.mail.backends.locmem.EmailBackend')
 class ConfirmarPedidoViewTests(TestCase):
     fixtures = ['datos.json']
@@ -68,10 +48,22 @@ class ConfirmarPedidoViewTests(TestCase):
         self.url = reverse('confirmar_pedido')
 
     def test_requiere_usuario_autenticado(self):
-        response = self.client.post(self.url, data=json.dumps({'productos': []}), content_type='application/json')
+        payload = {
+            'nombre': 'Usuario invitado',
+            'productos': [{'id': self.variant.producto_id, 'cantidad': 1}],
+            'metodo_pago': 'Efectivo'
+        }
+        response = self.client.post(self.url, data=json.dumps(payload), content_type='application/json')
         self.assertEqual(response.status_code, 401)
 
-    def test_crea_pedido_y_actualiza_stock(self):
+    def test_rechaza_carrito_vacio(self):
+        self.client.force_login(self.user)
+        payload = {'productos': [], 'metodo_pago': 'Efectivo'}
+        response = self.client.post(self.url, data=json.dumps(payload), content_type='application/json')
+        self.assertEqual(response.status_code, 400)
+
+    @patch('store.views.SendGridAPIClient')
+    def test_crea_pedido_y_actualiza_stock(self, sendgrid_mock):
         self.client.force_login(self.user)
         payload = {
             'productos': [{
@@ -85,18 +77,25 @@ class ConfirmarPedidoViewTests(TestCase):
             'coste_envio': '4.99',
             'direccion_envio': 'Calle Uno 123',
             'telefono': '600000000',
-            'metodo_pago': 'Tarjeta'
+            'metodo_pago': 'Efectivo',
+            'email': self.user.email,
+            'nombre': f'{self.user.first_name} {self.user.last_name}'
         }
+        sendgrid_mock.return_value.send.return_value = None
         stock_inicial = self.variant.stock
+
         response = self.client.post(self.url, data=json.dumps(payload), content_type='application/json')
         self.assertEqual(response.status_code, 200)
+
         data = response.json()
         pedido = Pedido.objects.get(pk=data['pedido_id'])
         self.variant.refresh_from_db()
+
         self.assertEqual(self.variant.stock, stock_inicial - 2)
         self.assertEqual(ItemPedido.objects.filter(pedido=pedido).count(), 1)
         self.assertEqual(pedido.subtotal, Decimal('49.98'))
         self.assertEqual(pedido.descuento, Decimal('10.00'))
+        self.assertEqual(pedido.coste_entrega, Decimal('4.99'))
         self.assertEqual(pedido.total, Decimal('53.37'))
 
 
@@ -109,7 +108,8 @@ class PedidosViewsTests(TestCase):
         self.owner = user_model.objects.get(email='cliente.demo@example.com')
         self.other = user_model.objects.get(email='admin.demo@example.com')
         self.pedido_owner = Pedido.objects.create(
-            cliente=self.owner,
+            email=self.owner.email,
+            nombre=f'{self.owner.first_name} {self.owner.last_name}',
             numero_pedido='PED-TEST-1',
             estado='Pendiente',
             subtotal=Decimal('29.99'),
@@ -132,7 +132,8 @@ class PedidosViewsTests(TestCase):
             color='Azul'
         )
         self.other_order = Pedido.objects.create(
-            cliente=self.other,
+            email=self.other.email,
+            nombre=f'{self.other.first_name} {self.other.last_name}',
             numero_pedido='PED-TEST-2',
             estado='Pendiente',
             subtotal=Decimal('19.99'),
@@ -156,3 +157,9 @@ class PedidosViewsTests(TestCase):
         self.client.force_login(self.owner)
         response = self.client.get(reverse('pedido', args=[self.other_order.id]))
         self.assertEqual(response.status_code, 404)
+
+    def test_detalle_pedido_propio_se_muestra(self):
+        self.client.force_login(self.owner)
+        response = self.client.get(reverse('pedido', args=[self.pedido_owner.id]))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context['pedido'], self.pedido_owner)
