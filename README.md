@@ -66,7 +66,7 @@ pip install django-jazzmin
 pip install stripe
 pip install sendgrid
 
-# Generar migraciones (se creó 0002_alter_cliente_email_alter_producto_marca)
+# Generar migraciones
 python manage.py makemigrations
 
 # Aplicar migraciones a la base de datos SQLite
